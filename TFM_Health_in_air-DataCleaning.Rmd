@@ -1,0 +1,325 @@
+---
+title: "1_TFM_Health_In_Air-DataCleaning"
+author: "Marcos Mariscal"
+date: "22/5/2021"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir= "C:/Users/mmariscal/Documents/TFM-KSCHOOL")
+knitr::opts_chunk$set(error = FALSE)
+```
+
+## Librerias a instalar:
+#install.packages("tidyverse") .- para el uso de tibbles
+#install.packages("sf") .- Data Frames geoespaciales
+#install.packages("maps") .- Datos de regiones 
+#install.packages("tools") .- Distintas utilidades de R, ej poner la primera letra de los títulos en mayusculas
+#install.packages("utils") .- Distintas utilidades de R
+#install.packages("stringr") .- tratamiento de cadenas de texto
+#install.packages("rnaturalearth") .- Datos de todos los paises
+#install.packages("rnaturalearthdata").- Necesario para un gran mapa
+#install.packages("ggrepel") .- Para que no se solapen las etiquetas en el mapa
+#install.packages("magick") .- Para generar animaciones con mapas preconstruidos
+#install.packages("readxl") .- Para leer ficheros excel
+
+## Realizamos las llamadas a las librerías instaladas:
+
+```{r libraries_calls, message=FALSE}
+library (yaml)
+library(tidyverse)
+library(sf) 
+library(maps)
+library (tools)
+library(utils)
+library(stringr)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(ggrepel)
+library(transformr)
+library(magick)
+library(readxl)
+```
+---------------------------------------------------------------------
+## Cargamos los datos de "Monitorización diaria de la calidad del aire"
+---------------------------------------------------------------------
+
+```{r Air_Quality_load}
+#Lista de años con datos de calidad del aire:
+datayears = c("2017","2018","2019","2020")
+# Definimos los nombres de los ficheros y los años de datos a cargar para los datos:
+prename="airdata"
+filepath="./Data/Air_Quality/"
+filename="daily_aqi_by_county_"
+pngpath="./png/"
+
+# Función de lectura y agrupación de datos con entrada años:
+getagg <- function(year){
+
+    pathzip <- paste (filepath,filename,year,".zip",sep="")
+    filecsv <- paste (filename,year,".csv",sep="")
+
+# lectura de cada fichero csv por año:  
+    df <- read.table(unz(pathzip, filecsv), header=T, quote="\"", sep=",")
+    
+# Incluimos el campo año-mes en el dataframe para agrupar por el:
+    df$yearmm<- paste(substr(df$Date,1,8),"01") 
+    df$yearmm<- as.Date(df$yearmm,format="%Y-%m-%d")
+    
+# Definición de los valores numéricos para las categorías AQI:      
+    df$Cat <- ifelse(df$Category=="Good",1,ifelse(df$Category=="Moderate",2,ifelse(df$Category=="Unhealthy for Sensitive Groups",3,ifelse(df$Category=="Unhealthy",4,ifelse(df$Category=="Very Unhealthy",5,ifelse(df$Category=="Hazardous",5,"Raro"))))))
+    
+# Dentro de la función, Agrupamos los datos de calidad del aire por Estado (State):
+# El índice AQI es el máximo de los índices obtenidos por los componentes analizados, AQI = max( AQIPM2.5, AQIPM10, AQIO3, ...)
+    aggdf <- df %>% select(State.Name, county.Name,Cat,AQI, yearmm) %>% group_by(State.Name, county.Name,yearmm) %>%  summarise(maxCat=max(Cat,na.rm=TRUE),maxAQI=max(AQI,na.rm=TRUE),aggnum=n())
+    
+  return (aggdf)
+}
+# Fin de la función de lectura y agrupación de datos
+
+
+#Llamamos a la función para cargar y agrupar los datos de calidad del aire para los años 2017 a 2020:
+aggtot <- tibble()
+
+for (i in 1:length(datayears)){
+
+  aggdata <- getagg(datayears[i])
+  aggtot <- union_all(aggtot,aggdata)
+}
+
+#  Construimos campo ID para su cruce con tibble de los condados de USA
+aggtot$ID <- paste(tolower(aggtot$State.Name),tolower(aggtot$county.Name), sep=",", collapse=NULL)
+
+# Recogemos los datos geograficos de los condados:
+counties <- st_as_sf(map("county", plot = FALSE, fill = TRUE))
+
+counties$area <- as.numeric(st_area(counties))
+
+# Cruce de datos aggregados con Counties para incluir los datos de geografia
+
+aggtotcounties <- merge(x = aggtot, y = counties, by = "ID", all.x = TRUE)
+```
+----------------------------------------------------------------------------------
+## Representamos los datos de calidad del aire en mapa geográfico de USA por Condado:
+----------------------------------------------------------------------------------
+
+```{r Usa_Geo_Data}
+
+#Recogemos los datos de los estados de USA:
+
+states <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
+
+states$ID <- toTitleCase(states$ID)
+
+#Incluimos en el dataframe, el dato de las áreas de los estados:
+states$area <- as.numeric(st_area(states))
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+states <- cbind(states, st_coordinates(st_centroid(states)))
+
+#Identificamos los valores de categorias AQI de calidad del aire:
+ncateg<- c(1,2,3,4,5,6)
+categ <- c("Good","Moderate","Unhealthy for Sensitive Groups","Unhealthy","Very Unhealthy","Hazardous")
+
+#Definimos los colores de cada categoria:
+colscateg <- c("1"="green","2"="yellow","3"="orange","4"="red","5"="darkred", "6"="black")
+
+
+#eliminamos los registros con areas nulas
+no_nulos = aggtotcounties %>% filter(!is.na(area))
+
+#extraemos las fechas de año y mes:
+dist_yearmm = aggtotcounties %>% distinct(yearmm) %>% arrange(yearmm)
+
+#Sacamos una lista de todas las fechas existentes:
+list <- dist_yearmm$yearmm
+lista <- as.integer(format(list, "%Y%m%d"))
+
+# Generamos un mapa por año mes con los datos de calidad de aire de cada condado en la ruta:
+
+f_maps <- for (i in 1:length(list)){ 
+df <- no_nulos  %>% filter(yearmm==list[[i]])
+
+ ggUsa <- ggplot(data = world) +
+        geom_sf()+
+        geom_sf(data = states) +
+        geom_sf(data = df, aes(geometry=geom,fill = maxCat)) +
+        scale_fill_manual(values=colscateg, name="AQI Categories",breaks=ncateg, labels=categ) +
+        geom_label_repel(size=2,fontface="bold",data = states, aes(x = X, y = Y, label = ID), 
+        nudge_x = c(1, -1.5, 2, 2, -1), nudge_y = c(0.25, -0.25, 0.5, 0.5, -0.5)) +
+        coord_sf(xlim = c(-130, -58), ylim = c(24.0, 50.1), expand = FALSE) +
+        ggtitle(paste("Air Quality in USA Counties",list[i],sep=" "))+
+        theme(axis.title.x=element_blank(),axis.title.y=element_blank())
+
+  ggsave(paste(pngpath,"ggUsa",lista[i],".png", sep=""),
+         width = 8, height = 6, units = 'in', dpi=150, pointsize=10)
+}
+
+# Salvamos todos los mapas geneados, como imágenes (.png) para luego poder animarlos:
+imglayers <- sapply(lista, function(ym){
+  image_read(paste(pngpath,'ggUsa', ym,'.png',  sep=''))
+})
+
+# Animamos los mapas guardados:
+imganim <- image_animate(image_join(imglayers),fps=1,dispose="previous")
+
+image_write(imganim, paste(pngpath,'ggUsa.gif'))
+
+giff<-image_read(paste(pngpath,'ggUsa.gif'))
+```
+## Incluimos el GIF animado de los indicadores de calidad del aire en los condados de USA
+   Para los años 2017 a 2020:
+
+```{r AQI_giff, echo=FALSE}
+giff
+
+```
+----------------------------------------------------------------------------------
+## Nuevo set de Datos, Visitas al Hospital por afecciones respiratorias:
+   Se trata de un informe en excel con mismo formato para todos los estados y cada uno de ellos separado en una hoja distinta
+----------------------------------------------------------------------------------
+```{r Visits_load}
+
+Visitspath="./Data/Hospital_Visits/"
+Visitsfile="HCUP_SummaryTrendTables_T5a.xlsx"
+
+#Lista de estados con datos de visitas médicas:
+states<- c("Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","District of Columbia","Georgia","Hawaii","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming")
+
+
+#Nuevos nombres de columnas para el dataset original:
+newcols<-c("A_Num_Dis","All_discharges","A_Num_byAge","Ages_0_4","Ages_5_9","Ages_10_17","Ages_18_44","Ages_45_64","Ages_65_79","Ages_80","A_Num_bySex","Male","Female","A_Num_Race","White","Black","Hispanic","All_other_races","Race_not_in_SID","Race_missing","A_Num_Urban_Rural_Res","Resi_L_metro","Resi_M_S_metros","Resi_nonmetro","Resi_missing","A_num_Comm_Income","Quart1_lowest_income","Quart2_3_middle_income","Quart4_highest_income","Missing_income","A_num_exp_payer","Medicare","Medicaid","Private_insurance","Self_pay","Other_pay","Missing_pay","A_num_Hosp_Urb","Hosp_L_metro","Hosp_M_S_metros","Hosp_Nonmetro","Num_Proc_class","Proc_operating_room","Proc_major_therapeutic","Proc_major_diagnostic","A_num_ByType_Intensive","Use_any_intens_care","Use_ICU","Use_CCU","Use_NICU","Use_other_care_units","A_Numb_by_mech_vent","Use_mech_ventilation","A_Num_TopCond","CIR009_myocardial_infar","CIR017_cardiac_dysrhy","CIR019_heart_failur","INF002_septicemia","RSP002_pneumonia","RSP005_acute_bronchitis","RSP008_chronic_pulmonary",
+"RSP009_asthma","RSP010_aspiration_pneumonitis","RSP012_respiratory_failure","All_other_conditions")
+
+
+#Reiniciamos el tibble que va a contener todos los datos de visitas médicas
+dftotvisits <- tibble()
+
+#Recorremos todos los estados con un bucle, para leer todas las hojas de la excel, eliminando Alaska
+for (i in 2:length(states)){
+#lectura de cada una de las hojas de la excel cuyo rango de datos es desde la celda A7 a AW72:
+dfvisits <-read_excel(paste(Visitspath,Visitsfile,sep=""), 
+                          sheet=states[i],range ="A7:AW72") 
+
+dfvisits<-add_column(dfvisits, new_cols=newcols,.before='Characteristic by Month')
+
+#Borramos la columna anterior de descripciones original:
+
+dfvisits <- select(dfvisits,-c('Characteristic by Month'))
+
+#Primero Trasponemos las columnas de fechas a filas, forzando a tipo caracter el resultado:
+dfwide <- dfvisits %>% tidyr::pivot_longer(.,-c('new_cols') ,names_to="Dates",values_to="result",values_transform = list(result = as.character))
+
+#Borramos las filas que no tiene ningun valor
+dfwide <- dfwide %>% drop_na(result)
+
+#Transformamos las fechas numericas de excel al formato Date de tibble:
+dfwide$Dates <- as.numeric(dfwide$Dates)-2
+
+dfwide$Dates <- as.Date(dfwide$Dates, origin = "1900-01-01")
+
+#Trasponemos las filas que son variables cuantitativas a columnas
+dflong <- dfwide %>% tidyr::pivot_wider(names_from ='new_cols',values_from= "result")
+
+#eliminamos los valores "***" para poder convertir las columnas a numéricas:
+dflong <- dflong %>% mutate(across(where(is.character), ~na_if(., "***")))
+
+dflong <- dflong %>% mutate(across(where(is.character), as.integer))
+
+#Incluimos el valor del nombre de estado en todas las filas ya formateadas
+dflong<-add_column(dflong, ID=states[i],.after='Dates')
+
+dftotvisits <- union_all(dftotvisits,dflong)
+}
+#Se cierra el bucle de lectura de todas las hojas excel
+
+#Media Desviación standard y tasa media de las visitas hospitalarias por año (Year=as.integer(format(Dates, "%Y")) y estado:
+medsd_visits <- dftotvisits %>% group_by(ID) %>% summarize(average = mean(All_discharges), standard_deviation = sd(All_discharges), median_rate=median(All_discharges))
+
+```
+----------------------------------------------------------------------------------
+## Representamos los datos de visitas hospitalarias en mapa geográfico de USA por estados:
+----------------------------------------------------------------------------------
+```{r Visits_states}
+#Identificamos los rangos de visitas a urgencias:
+nvisits<- c(1,2,3,4,5,6)
+catvisits<- c("Good","Moderate","Unhealthy for Sensitive Groups","Unhealthy","Very Unhealthy","Hazardous")
+
+#Definimos los colores de cada categoria:
+colsvisits <- c("1"="green","2"="yellow","3"="orange","4"="red","5"="darkred", "6"="black")
+
+
+#Recogemos los datos de los estados de USA:
+
+states <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
+
+states$ID <- toTitleCase(states$ID)
+
+#Incluimos en el dataframe, el dato de las áreas de los estados:
+states$area <- as.numeric(st_area(states))
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+states <- cbind(states, st_coordinates(st_centroid(states)))
+
+# Cruce de datos de visitas hospitalarias con los estados para incluir los datos de geografia
+
+aggtotvisits <- merge(x = dftotvisits, y = states, by = "ID", all.x = TRUE) 
+
+#utils::View(aggtotvisits)# para ver todo el dataframe, ya que el view normal solo presenta las 50 primeras columnas
+
+#extraemos las fechas para incluirlos en una lista:
+dist_dates = aggtotvisits %>% distinct(Dates) %>% arrange(Dates)
+dates = dist_dates$Dates
+
+```
+
+
+# Generamos un mapa por año mes con los datos de calidad de aire de cada condado
+
+```{r Visits_map}
+f_visits_maps <- for (i in 1:length(dates)){ 
+df <- aggtotvisits  %>% filter(Dates==dates[i])
+
+ ggUsa <- ggplot(data = world) +
+        geom_sf()+
+        geom_sf(data = states) +
+        geom_sf(data = df, aes(geometry=geom,fill = All_discharges)) +
+#scale_fill_manual(values=colscateg, name="Visits Number",breaks=ncateg, labels=categ) +
+        geom_label_repel(size=2,fontface="bold",data = states, aes(x = X, y = Y, label = ID), 
+        nudge_x = c(1, -1.5, 2, 2, -1), nudge_y = c(0.25, -0.25, 0.5, 0.5, -0.5)) +
+        coord_sf(xlim = c(-130, -58), ylim = c(24.0, 50.1), expand = FALSE) +
+        ggtitle(paste("Hospital Visits in USA States",dist_dates$Dates[i],sep=" "))+
+        theme(axis.title.x=element_blank(),axis.title.y=element_blank())
+
+# Salvamos todos los mapas geneados, como imágenes (.png):
+  ggsave(paste(pngpath,"ggVisitsUsa",dist_dates$Dates[i],".png", sep=""),
+         width = 8, height = 6, units = 'in', dpi=110, pointsize=10)
+}
+
+
+# generamos una función para recorrer los mapas geneados y poder animarlos:
+imgvisistslayers <- sapply(dist_dates$Dates, function(ym){
+  image_read(paste(pngpath,'ggVisitsUsa', ym,'.png',  sep=''))
+})
+
+```
+
+##Salvamos los mapas generados
+
+```{r save_visits_map}
+# Animamos los mapas guardados:
+imganimvisits <- image_animate(image_join(imgvisistslayers),fps=1,dispose="previous")
+
+image_write(imganimvisits, paste(pngpath,'ggvisitsUsa.gif'))
+
+giffvisits<-image_read(paste(pngpath,'ggvisitsUsa.gif'))
+```
+
+## Animación de Mapa de Visitas hospitalarias
+
+```{r Visits_Giff}
+giffvisits
+```
+
