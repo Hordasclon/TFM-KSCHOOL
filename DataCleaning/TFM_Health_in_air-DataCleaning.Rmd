@@ -11,7 +11,7 @@ knitr::opts_chunk$set(error = FALSE)
 ```
 
 ## Librerias a instalar:
-#install.packages("tidyverse") .- para el uso de tibbles
+#install.packages("tidyverse") .- para el uso de tibbless
 #install.packages("sf") .- Data Frames geoespaciales
 #install.packages("maps") .- Datos de regiones 
 #install.packages("tools") .- Distintas utilidades de R, ej poner la primera letra de los títulos en mayusculas
