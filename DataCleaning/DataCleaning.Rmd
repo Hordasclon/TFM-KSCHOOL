@@ -6,7 +6,7 @@ output: html_document
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir= "C:/Users/mmariscal/Documents/TFM-KSCHOOL")
+knitr::opts_knit$set(root.dir= "C:/Users/mmariscal/Documents/TFM-KSCHOOL/TFM-KSCHOOL")
 knitr::opts_chunk$set(error = FALSE)
 ```
 
@@ -135,7 +135,7 @@ no_nulos = aggtotcounties %>% filter(!is.na(area))
 Air_Quality_Indexes <-no_nulos
 
 # Guardamos el Tibble con los datos AQI:
-save(Air_Quality_Indexes, file = paste(datapath,"Air_Quality_Indexes.Rdata"))
+save(Air_Quality_Indexes, file = paste(datapath,"Air_Quality_Indexes.Rdata",sep=""))
 ```
 
 ----------------------------------------------------------------------------------
@@ -179,9 +179,9 @@ imglayers <- sapply(lista, function(ym){
 # Animamos los mapas guardados:
 imganim <- image_animate(image_join(imglayers),fps=1,dispose="previous")
 
-image_write(imganim, paste(pngpath,'ggUsa.gif'))
+image_write(imganim, paste(pngpath,'ggUsa.gif',sep=""))
 
-giff<-image_read(paste(pngpath,'ggUsa.gif'))
+giff<-image_read(paste(pngpath,'ggUsa.gif',sep=""))
 giff
 ```
 
@@ -288,7 +288,7 @@ states <- cbind(states, st_coordinates(st_centroid(states)))
 
 # Guardamos el Tibble con los datos Visists:
 
-save(Hospital_Visits_by_State, file = paste(datapath,"Hospital_Visits_by_State.Rdata"))
+save(Hospital_Visits_by_State, file = paste(datapath,"Hospital_Visits_by_State.Rdata",sep=""))
 
 
 ```
