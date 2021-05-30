@@ -70,10 +70,12 @@ getagg <- function(year){
     
 # Definición de los valores numéricos para las categorías AQI:      
     df$Cat <- ifelse(df$Category=="Good",1,ifelse(df$Category=="Moderate",2,ifelse(df$Category=="Unhealthy for Sensitive Groups",3,ifelse(df$Category=="Unhealthy",4,ifelse(df$Category=="Very Unhealthy",5,ifelse(df$Category=="Hazardous",5,"Raro"))))))
+
     
 # Dentro de la función, Agrupamos los datos de calidad del aire por Estado (State):
 # El índice AQI es el máximo de los índices obtenidos por los componentes analizados, AQI = max( AQIPM2.5, AQIPM10, AQIO3, ...)
     aggdf <- df %>% select(State.Name, county.Name,Cat,AQI, yearmm) %>% group_by(State.Name, county.Name,yearmm) %>%  summarise(maxCat=max(Cat,na.rm=TRUE),maxAQI=max(AQI,na.rm=TRUE),aggnum=n())
+
     
   return (aggdf)
 }
@@ -89,6 +91,14 @@ for (i in 1:length(datayears)){
   aggtot <- union_all(aggtot,aggdata)
 }
 
+```
+
+----------------------------------------------------------------------------------
+## Merging with geographical data for USA Counties and saving as RData:
+----------------------------------------------------------------------------------
+
+```{r Usa_Geo_Data, include=FALSE}
+
 #  Construimos campo ID para su cruce con tibble de los condados de USA
 aggtot$ID <- paste(tolower(aggtot$State.Name),tolower(aggtot$county.Name), sep=",", collapse=NULL)
 
@@ -100,13 +110,6 @@ counties$area <- as.numeric(st_area(counties))
 # Cruce de datos aggregados con Counties para incluir los datos de geografia
 
 aggtotcounties <- merge(x = aggtot, y = counties, by = "ID", all.x = TRUE)
-```
-
-----------------------------------------------------------------------------------
-## Merging with geographical data for USA Counties and saving as RData:
-----------------------------------------------------------------------------------
-
-```{r Usa_Geo_Data, include=FALSE}
 
 #Recogemos los datos de los estados de USA:
 
@@ -133,6 +136,10 @@ colscateg <- c("1"="green","2"="yellow","3"="orange","4"="red","5"="darkred", "6
 no_nulos = aggtotcounties %>% filter(!is.na(area))
 
 Air_Quality_Indexes <-no_nulos
+
+#Convert to numeric
+Air_Quality_Indexes$maxCat <- as.numeric(Air_Quality_Indexes$maxCat)
+head(Air_Quality_Indexes)
 
 # Guardamos el Tibble con los datos AQI:
 save(Air_Quality_Indexes, file = paste(datapath,"Air_Quality_Indexes.Rdata",sep=""))

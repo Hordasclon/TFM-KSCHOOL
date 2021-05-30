@@ -15,6 +15,7 @@ knitr::opts_chunk$set(error = FALSE)
 ---
 ```{r call_libraries, include=FALSE}
 library(tidyverse)
+library (tools)
 ```
 
 ---
@@ -33,25 +34,41 @@ datapath="./Data/"
 ```{r RData_Load, echo=FALSE}
 # Read AQI Visits
 load(file = paste(datapath,"Air_Quality_Indexes.Rdata", sep=""))
-Air_Quality_Indexes
+head(Air_Quality_Indexes)
 # Read Hospital Visits
 load(file = paste(datapath,"Hospital_Visits_by_State.Rdata", sep=""))
+head(Hospital_Visits_by_State)
 ```
 
 ---------------------------------------------------------------------
 ## Group Air QUality Indexes by States
 ---------------------------------------------------------------------
 
-```{r AQI_Group_By_State, echo=FALSE}
+```{r AQI_Group_By_State, include=FALSE}
 
-#Air Quality Indexes Grouped by State and month, having media, median value and standard desviation:
-AQI_State_Group <- Air_Quality_Indexes %>% select (State.Name, yearmm, maxCat, maxAQI)  %>% group_by(State.Name, yearmm) %>% summarize(meanCat = mean(maxCat), sdcat = sd(maxCat), mediancat=median(maxCat),meanAQI = mean(maxAQI), sdAQI = sd(maxAQI), medianAQI=median(maxAQI))
+#Air Quality Indexes Grouped by State and month, having media, median value and standard desviation from: maxCat, maxAQI:
+AQI_State_Group <- Air_Quality_Indexes %>% select (State.Name, yearmm, maxCat,maxAQI)  %>% group_by(State.Name, yearmm) %>% summarize(meanCat = mean(maxCat), sdcat = sd(maxCat), mediancat=median(maxCat),meanAQI = mean(maxAQI), sdAQI = sd(maxAQI), medianAQI=median(maxAQI))
+
+AQI_State_Group <- rename(AQI_State_Group, "ID"="State.Name")
+AQI_State_Group <- rename(AQI_State_Group, "Dates"="yearmm")
+
+head(AQI_State_Group)
+
+```
+
+---
+# Merging Air Quality data with Hospital Visits
+---
+
+```{r Merge_Data, echo=FALSE}
+utils::View(Hospital_Visits_by_State)
+
+# Cruce de datos aggregados con Counties para incluir los datos de geografia
+
+TotData <- full_join(x = AQI_State_Group, y =Hospital_Visits_by_State , by = c("ID","Dates"))
+
+utils::View(TotData)
+
 ```
 
 
-
-
-
-
-
-```{r Bye, echo=FALSE}
