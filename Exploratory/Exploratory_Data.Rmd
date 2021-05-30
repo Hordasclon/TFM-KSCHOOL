@@ -1,0 +1,57 @@
+---
+title: "Expl_Data_Analysis"
+author: "Marcos Mariscal"
+date: "23/5/2021"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir= "C:/Users/mmariscal/Documents/TFM-KSCHOOL")
+knitr::opts_chunk$set(error = FALSE)
+```
+
+---
+# Calling libraries
+---
+```{r call_libraries, echo=FALSE}
+library(tidyverse)
+```
+
+---
+## Enviroment variables def
+---
+```{r aqidefs, include=FALSE}
+airfilepath="./Data/Air_Quality/"
+pngpath="./png/"
+datapath="./Data/"
+```
+
+---
+## Loading Air QUality Indexes Data and Hospital Visits with geographical data
+---
+
+```{r RData_Load, echo=FALSE}
+# Read AQI Visits
+load(file = paste(datapath,"Air_Quality_Indexes.Rdata"))
+Air_Quality_Indexes
+# Read Hospital Visits
+load(file = paste(datapath,"Hospital_Visits_by_State.Rdata"))
+```
+
+---------------------------------------------------------------------
+## Group Air QUality Indexes by States
+---------------------------------------------------------------------
+
+```{r AQI_Group_By_State, echo=FALSE}
+
+#Air Quality Indexes Grouped by State and month, having media, median value and standard desviation:
+AQI_State_Group <- Air_Quality_Indexes %>% select (State.Name, yearmm, maxCat, maxAQI)  %>% group_by(State.Name, yearmm) %>% summarize(meanCat = mean(maxCat), sdcat = sd(maxCat), mediancat=median(maxCat),meanAQI = mean(maxAQI), sdAQI = sd(maxAQI), medianAQI=median(maxAQI))
+```
+
+
+
+
+
+
+
+```{r Bye, echo=FALSE}
