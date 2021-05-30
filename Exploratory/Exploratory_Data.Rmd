@@ -6,14 +6,14 @@ output: html_document
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir= "C:/Users/mmariscal/Documents/TFM-KSCHOOL")
+knitr::opts_knit$set(root.dir= "C:/Users/mmariscal/Documents/TFM-KSCHOOL/TFM-KSCHOOL")
 knitr::opts_chunk$set(error = FALSE)
 ```
 
 ---
 # Calling libraries
 ---
-```{r call_libraries, echo=FALSE}
+```{r call_libraries, include=FALSE}
 library(tidyverse)
 ```
 
@@ -32,10 +32,10 @@ datapath="./Data/"
 
 ```{r RData_Load, echo=FALSE}
 # Read AQI Visits
-load(file = paste(datapath,"Air_Quality_Indexes.Rdata"))
+load(file = paste(datapath,"Air_Quality_Indexes.Rdata", sep=""))
 Air_Quality_Indexes
 # Read Hospital Visits
-load(file = paste(datapath,"Hospital_Visits_by_State.Rdata"))
+load(file = paste(datapath,"Hospital_Visits_by_State.Rdata", sep=""))
 ```
 
 ---------------------------------------------------------------------
