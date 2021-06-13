@@ -61,6 +61,8 @@ if  (!(dir.exists("./png/")))
 
 pngpath="./png/"
 datapath="./Data/"
+popfilepath="./Data/Population/"
+datapath="./Data/"
 ```
 
 ---------------------------------------------------------------------
@@ -147,7 +149,7 @@ categ <- c("Good","Moderate","Unhealthy for Sensitive Groups","Unhealthy","Very 
 # Defining each AQI category colors
 colscateg <- c("1"="green","2"="yellow","3"="orange","4"="red","5"="darkred", "6"="black")
 
-#eliminamos los registros con areas nulas
+#deleting records with empty areas
 no_nulos = aggtotcounties %>% filter(!is.na(area))
 
 Air_Quality_Indexes <-no_nulos
@@ -156,13 +158,13 @@ Air_Quality_Indexes <-no_nulos
 Air_Quality_Indexes$maxCat <- as.numeric(Air_Quality_Indexes$maxCat)
 head(Air_Quality_Indexes)
 
-# Guardamos el Tibble con los datos AQI:
+# Saving Tibble with AQI data:
 save(Air_Quality_Indexes, file = paste(datapath,"Air_Quality_Indexes.Rdata",sep=""))
 
 #extracting year and month:
 dist_yearmm = aggtotcounties %>% distinct(yearmm) %>% arrange(yearmm)
 
-#Sacamos una lista de todas las fechas existentes:
+# Getting a list of year month existing in data:
 list <- dist_yearmm$yearmm
 lista <- as.integer(format(list, "%Y%m%d"))
 ```
@@ -173,7 +175,7 @@ lista <- as.integer(format(list, "%Y%m%d"))
 
 ```{r Generate_AQI_png_maps,  include=FALSE,results = FALSE}
 #, eval=FALSE
-# Generamos un mapa por año mes con los datos de calidad de aire de cada condado en la ruta:
+# Generating a map per year and month with air quality data per county
 
 f_maps <- for (i in 1:length(list)){ 
 df <- no_nulos  %>% filter(yearmm==list[[i]])
@@ -197,7 +199,7 @@ Now saving maps as .png
 
 ```{r AQI_Maps_read, include=FALSE, results = FALSE}
 #, eval=FALSE
-# Salvamos todos los mapas geneados, como imágenes (.png) para luego poder animarlos:
+# Saving generated maps as png images for animating them
 imglayers <- sapply(lista, function(ym){
   image_read(paste(pngpath,'ggUsa', ym,'.png',  sep=''))
 })
@@ -207,7 +209,7 @@ Animate maps
 
 ```{r AQI_Maps_animate, include=FALSE, results = FALSE}
 #, eval=FALSE
-# Animamos los mapas guardados:
+# Animating saved maps
 imganim <- image_animate(image_join(imglayers),fps=1,dispose="previous")
 ```
 
@@ -260,13 +262,13 @@ for (i in 2:length(states)){
   #Borramos la columna anterior de descripciones original:
   dfvisits <- select(dfvisits,-c('Characteristic by Month'))
 
-#Primero Trasponemos las columnas de fechas a filas, forzando a tipo caracter el resultado:
+# Pivoting longer the dates columns to row forcing the result to character type:
 dfwide <- dfvisits %>% tidyr::pivot_longer(.,-c('new_cols') ,names_to="Dates",values_to="result",values_transform = list(result = as.character))
 
-#Borramos las filas que no tiene ningun valor
+# Erasing rows with no value:
 dfwide <- dfwide %>% drop_na(result)
 
-#Transformamos las fechas numericas de excel al formato Date de tibble:
+# transforms numeric dates of excel format to tibble date type:
 dfwide$Dates <- as.numeric(dfwide$Dates)-2
 
 dfwide$Dates <- as.Date(dfwide$Dates, origin = "1900-01-01")
@@ -394,9 +396,6 @@ image_write(imganimvisits,gif_file)
 
 ![](C:/Users/mmariscal/Documents/TFM-KSCHOOL/TFM-KSCHOOL/ggvisitsUsa.gif)
 
-
-
-
 ---
 ## Loading population data from 2017 to 2020 by State
 From: https://www2.census.gov/programs-surveys/popest/datasets/2010-2020/state/totals/USA
@@ -459,7 +458,7 @@ utils::View(Hosp_visits_pop_by_state)
 
 # Saving in a data file the Tibble with Hospital data Visits and States population:
 
-###save(Hosp_visits_pop_by_state, file = paste(datapath,"Hosp_visits_pop_by_state.Rdata",sep=""))
+save(Hosp_visits_pop_by_state, file = paste(datapath,"Hosp_visits_pop_by_state.Rdata",sep=""))
 
 
 ```
