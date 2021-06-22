@@ -16,59 +16,144 @@ knitr::opts_chunk$set(error = FALSE)
 ```{r call_libraries, include=FALSE}
 library(tidyverse)
 library (tools)
+library(dplyr)
+library (ggplot2)
+library(sf)
+library(ggrepel) 
 ```
 
 ---
-## Enviroment variables def
+## Enviroment variables definition
 ---
 ```{r aqidefs, include=FALSE}
 airfilepath="./Data/Air_Quality/"
 pngpath="./png/"
 datapath="./Data/"
+
+# Defining file names variables to load the data
+file_aqi_save = "Air_Quality_Indexes.Rdata"
+file_visits_save = "Hosp_visits_pop_by_state.Rdata"
 ```
 
 ---
-## Loading Air QUality Indexes Data and Hospital Visits with geographical data
+## Loading Air QUality Indexes Data and Hospital Unexpected Visits population at State level with geographical data
 ---
 
-```{r RData_Load, echo=FALSE}
+```{r Load_AirQ, echo=FALSE}
 # Read AQI Visits
-load(file = paste(datapath,"Air_Quality_Indexes.Rdata", sep=""))
+load(file = paste(datapath,file_aqi_save, sep=""))
 head(Air_Quality_Indexes)
+```
+
+---
+## Loading Hospital Unexpected Visits and the whole population at USA State level with geographical data
+---
+
+```{r Load_HospVisits, echo=FALSE}
 # Read Hospital Visits
-load(file = paste(datapath,"Hospital_Visits_by_State.Rdata", sep=""))
-head(Hospital_Visits_by_State)
+load(file = paste(datapath,file_visits_save, sep=""))
+head(Hosp_visits_pop_by_state)
+
 ```
 
 ---------------------------------------------------------------------
 ## Group Air QUality Indexes by States
 ---------------------------------------------------------------------
+Air Quality Indexes Grouped by State and month, having media, median value and standard desviation from: maxCat, maxAQI
 
-```{r AQI_Group_By_State, include=FALSE}
+```{r AQI_Group_By_State, echo=FALSE}
 
 #Air Quality Indexes Grouped by State and month, having media, median value and standard desviation from: maxCat, maxAQI:
 AQI_State_Group <- Air_Quality_Indexes %>% select (State.Name, yearmm, maxCat,maxAQI)  %>% group_by(State.Name, yearmm) %>% summarize(meanCat = mean(maxCat), sdcat = sd(maxCat), mediancat=median(maxCat),meanAQI = mean(maxAQI), sdAQI = sd(maxAQI), medianAQI=median(maxAQI))
 
-AQI_State_Group <- rename(AQI_State_Group, "ID"="State.Name")
+AQI_State_Group <- rename(AQI_State_Group, "STATES"="State.Name")
 AQI_State_Group <- rename(AQI_State_Group, "Dates"="yearmm")
 
 head(AQI_State_Group)
 
 ```
 
----
-# Merging Air Quality data with Hospital Visits
+--- 
+# Merging Air Quality data with Hospital Visits and states population
 ---
 
 ```{r Merge_Data, echo=FALSE}
-utils::View(Hospital_Visits_by_State)
 
-# Cruce de datos aggregados con Counties para incluir los datos de geografia
+# Merge for Air Quality data and Hospital Visits group by USA State. With geographical data
 
-TotData <- full_join(x = AQI_State_Group, y =Hospital_Visits_by_State , by = c("ID","Dates"))
+TotData_1 <- full_join(x = AQI_State_Group, y =Hosp_visits_pop_by_state , by = c("STATES","Dates"))
+
+#Convert to numeric
+
+TotData_1$REGION <- as.numeric(TotData_1$REGION)
+
+
+# Generating a Tibble for USA States abbreviations and regions
+
+statesabbs<- as.tibble(state.name)
+statesabbs$statabb<-state.abb
+statesabbs$statreg<-state.region
+
+# Rename value column to STATES
+names(statesabbs)[names(statesabbs) == "value"] <- "STATES"
+
+# Including States abbreviations and regions in TOTAL data
+TotData_2 <- merge(x = TotData_1, y = statesabbs, by= "STATES", all.x = TRUE)
+
+#Erasing records with No Hospital visits data
+TotData = TotData_2 %>% filter(!is.na(All_discharges))
+
+#Erasing records medianAQI data
+TotData = TotData %>% filter(!is.na(medianAQI))
 
 utils::View(TotData)
 
 ```
 
+---
+# Generating a ggplot graph to analyze the Data
+---
+
+```{r first ggplot, echo=FALSE}
+
+#Extracting all year and month from TotDate.Dates:
+dist_Dates = TotData %>% distinct(Dates) %>% arrange(Dates)
+
+#Getting the list from all existing dates:
+listDates <- dist_Dates$Dates
+
+TotData_2017 <- TotData %>% filter(Dates== listDates[[30]])
+utils::View(TotData_2017)
+
+#Plotting Hospitals Visits vs USA data states points
+
+colsminus <- c("geom")
+
+First_graph <- TotData_2017%>% ggplot()+
+  geom_point(aes(x =POPULATION/10^6, y =All_discharges, col=statreg),size = 2) + 
+  geom_text_repel(aes(POPULATION/10^6, All_discharges, label = statabb), nudge_x = -0.1)+
+  scale_x_continuous(trans = "log10") +scale_y_continuous(trans = "log10")+ 
+  ylab("Total Hospital Visits with respiratory diseases (log scale)") +
+  xlab(" (Population (log scale)") +
+  ggtitle("Hospital Visits with respiratory diseases, in USA States for 2017-01-01")+
+  scale_color_discrete(name = "Region")
+
+
+
+#Including average line to refer the distance from it with the States Hosp.visits with respiratory diseases
+
+avline <- TotData_2017 %>%
+  summarize(rate = sum(All_discharges)/ sum(POPULATION) * 10^6) %>%
+  pull(rate)
+
+First_graph + geom_abline(intercept = log10(avline), lty = 2, color = "darkgrey")
+
+#print(First_graph)
+
+```
+
+
+```{r}
+
+```
 
