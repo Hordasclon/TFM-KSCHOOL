@@ -19,7 +19,10 @@ library (tools)
 library(dplyr)
 library (ggplot2)
 library(sf)
-library(ggrepel) 
+library(ggrepel)
+require(gridExtra)
+library(RColorBrewer)
+library(cowplot)
 ```
 
 ---
@@ -33,6 +36,8 @@ datapath="./Data/"
 # Defining file names variables to load the data
 file_aqi_save = "Air_Quality_Indexes.Rdata"
 file_visits_save = "Hosp_visits_pop_by_state.Rdata"
+
+Years = c(2017,2018,2019,2020)
 ```
 
 ---
@@ -90,7 +95,7 @@ TotData_1$REGION <- as.numeric(TotData_1$REGION)
 
 # Generating a Tibble for USA States abbreviations and regions
 
-statesabbs<- as.tibble(state.name)
+statesabbs<- as_tibble(state.name)
 statesabbs$statabb<-state.abb
 statesabbs$statreg<-state.region
 
@@ -106,52 +111,153 @@ TotData = TotData_2 %>% filter(!is.na(All_discharges))
 #Erasing records medianAQI data
 TotData = TotData %>% filter(!is.na(medianAQI))
 
+#Generate month field in order to get monthly group data
+
+TotData <- TotData%>%mutate(MONTH= as.integer(format(Dates, "%m")))
+
 utils::View(TotData)
 
 ```
 
+# Now we are going to analyze best data to study the correlation between Air Qaulity Index and the effects of health 
+
 ---
-# Generating a ggplot graph to analyze the Data
+# This ggplot graph is to analyze the different State data for Hospital visits with respiratory diseases
 ---
 
-```{r first ggplot, echo=FALSE}
+```{r ggplot, message=FALSE}
 
-#Extracting all year and month from TotDate.Dates:
-dist_Dates = TotData %>% distinct(Dates) %>% arrange(Dates)
+# Standard deviation and mean rate of hospital visits per month and USA State
+AggTotData <- TotData %>% group_by(STATES,MONTH,statreg,statabb) %>% summarize(mnVisits = mean(All_discharges), sdVisits = sd(All_discharges), mdVisits=median(All_discharges),mnPop = mean(POPULATION), sdPop= sd(POPULATION), mdPop=median(POPULATION),nyears = n())
 
-#Getting the list from all existing dates:
-listDates <- dist_Dates$Dates
+f_visits_graphs <- for (i in 1:12){ 
+  
+  PartMonthData<- AggTotData %>%select(STATES,MONTH,statreg,statabb,mnVisits,mnPop) %>%filter(MONTH== i)
+  
+  #Plotting Hospitals Visits vs USA data states points
 
-TotData_2017 <- TotData %>% filter(Dates== listDates[[30]])
-utils::View(TotData_2017)
-
-#Plotting Hospitals Visits vs USA data states points
-
-colsminus <- c("geom")
-
-First_graph <- TotData_2017%>% ggplot()+
-  geom_point(aes(x =POPULATION/10^6, y =All_discharges, col=statreg),size = 2) + 
-  geom_text_repel(aes(POPULATION/10^6, All_discharges, label = statabb), nudge_x = -0.1)+
-  scale_x_continuous(trans = "log10") +scale_y_continuous(trans = "log10")+ 
-  ylab("Total Hospital Visits with respiratory diseases (log scale)") +
-  xlab(" (Population (log scale)") +
-  ggtitle("Hospital Visits with respiratory diseases, in USA States for 2017-01-01")+
-  scale_color_discrete(name = "Region")
-
-
-
-#Including average line to refer the distance from it with the States Hosp.visits with respiratory diseases
-
-avline <- TotData_2017 %>%
-  summarize(rate = sum(All_discharges)/ sum(POPULATION) * 10^6) %>%
-  pull(rate)
-
-First_graph + geom_abline(intercept = log10(avline), lty = 2, color = "darkgrey")
-
-#print(First_graph)
+  Visit_graph <- PartMonthData%>% ggplot()+
+    geom_point(aes(x =mnPop/10^6, y =mnVisits, col=statreg),size = 2) + 
+    geom_text_repel(aes(mnPop/10^6, mnVisits, label = statabb), nudge_x = -0.1,nudge_y = 0.1)+
+    scale_x_continuous(trans = "log10") +scale_y_continuous(trans = "log10")+ 
+    ylab("Total Hospital Visits with respiratory diseases (log scale)") +
+    xlab(" (Population (log scale)") +
+    ggtitle(paste("Hospital Visits with respiratory diseases, in USA States for ",month.name[i],sep=""))+
+    scale_color_discrete(name = "Region")
+  
+  #Including average line to refer the distance from it with the States Hosp.visits with respiratory diseases
+  
+  avline <- PartMonthData %>%  summarize(rate = sum(mnVisits)/ sum(mnPop) * 10^6)  %>% pull(rate)
+  
+  line <- mean(unlist(avline))
+  
+  grapth <- Visit_graph + geom_abline(intercept = log10(line), lty = 2, color = "darkgrey")
+  
+  assign(paste("Visits_g",i,sep=""), (grapth))
+}
 
 ```
 
+# Visual analysis for Hospital visits with respiratory diseases aggretated Data by Month
+
+```{r Janggplot, message=FALSE}
+Visits_g1
+Visits_g2
+Visits_g3
+Visits_g4
+Visits_g5
+Visits_g6
+Visits_g7
+Visits_g8
+Visits_g9
+Visits_g10
+Visits_g11
+Visits_g12
+
+```
+
+# January graphs from 2017 to 2020
+
+
+# Histograms to analyze most relevant States Hospital Visits data 
+
+```{r Histograms, message=FALSE}
+# Feature All_discharges (Hospital Visits with respiratory illness)
+#utils::View(TotData)
+
+AggTotData <- AggTotData%>%mutate(RateVisits= round((mnVisits/mnPop)*100,4))
+
+ for (i in 1:12) {
+
+    PartMonthData<- AggTotData %>%select(STATES,MONTH,statreg,statabb,mnVisits,mnPop,RateVisits) %>%filter(MONTH== i)
+
+    histogr <-hist(PartMonthData$RateVisits, breaks=20, xlim=c(0,0.2), ylim=c(0,10) , col=rgb(1,0,0,0.5) , xlab="Hosp.Visits rate by Population" , ylab="count" , main=paste("Month ",month.name[i],sep="") )
+    
+   assign(paste("histogr_",i,sep=""), (histogr))
+ }
+
+```
+
+# We can see that in general most data are in interval 0.03 and 0.1 rates
+
+# Now plotting states and Hosp.Visit rates by Month
+
+```{r States_HospV ,include=FALSE}
+
+ for (i in 1:12) {
+
+   # Filtering Data by Month 
+   PartMonthData<- AggTotData %>%select(STATES,MONTH,statreg,statabb,mnVisits,mnPop,RateVisits) %>%filter(MONTH== i)
+   
+    #Arrange Data by Hospital visits vs Population rate
+    PartMonthData <-PartMonthData %>% arrange(-RateVisits)
+    StatesOrd <- PartMonthData$STATES
+    
+    getPalette <- colorRampPalette(brewer.pal(9, "Set1"))(44)
+
+    
+    states_graph <-  ggplot(data=PartMonthData, aes(x=reorder(STATES,-RateVisits), y=RateVisits,fill=STATES)) +  
+     geom_bar(stat="identity", width=0.8) +  
+     theme(axis.text.x = element_blank(),aspect.ratio=6/4 )+ xlab("Usa States")+ ylab("Hospital visits vs Population rate")+ 
+     scale_fill_manual(labels=StatesOrd,values =getPalette,name = "States Order by Hosp.Visits rate" )+
+     ggtitle(paste("Usa States order byHosp.Visits vs Population rate at ",month.name[i],sep=""))+
+     theme(plot.title = element_text(vjust = 0),legend.key.size = unit(0.4, "cm"),legend.key.width = unit(0.4,"cm") )+
+     scale_y_continuous(limits=c(0,0.135))
+    
+   assign(paste("states_graph_",i,sep=""), (states_graph))
+ }
+
+```
+
+```{r States_HospV_graph}
+
+states_graph_1
+states_graph_2
+states_graph_3
+states_graph_4
+states_graph_5
+states_graph_6
+states_graph_7
+states_graph_8
+states_graph_9
+states_graph_10
+states_graph_11
+states_graph_12
+
+```
+
+# We can see that 10 Sates always repeat with high rates of Hosp.Visits  each year from 2017 to 2020
+
+## Analyzing Air Quality Data
+
+```{r}
+
+```
+
+
+
+
+#Correlation
 
 ```{r}
 
