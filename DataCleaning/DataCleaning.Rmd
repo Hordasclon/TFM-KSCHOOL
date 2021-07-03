@@ -6,9 +6,8 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir= "C:/Users/mmariscal/Documents/TFM-KSCHOOL/TFM-KSCHOOL")
-knitr::opts_chunk$set(error = FALSE)
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+proydir <- rprojroot::find_rstudio_root_file()
 ```
 
 ## Libreries to install:
@@ -65,6 +64,7 @@ pngpath="./png/"
 datapath="./Data/"
 popfilepath="./Data/Population/"
 datapath="./Data/"
+imgpath="/images/"
 Visitspath="./Data/Hospital_Visits/"
 
 # Defining file names variables to load the data
@@ -79,35 +79,56 @@ file_visits_save = "Hosp_visits_pop_by_state.Rdata"
 #Generate not_in function for different uses
 `%not_in%` <- purrr::negate(`%in%`)
 
+
 ```
 
 ---------------------------------------------------------------------
 ## Loading Data from "Dialy Air Quality Monitor"
 From: https://www.hcup-us.ahrq.gov/reports/trendtables/summarytrendtables.jsp#export
 ---------------------------------------------------------------------
+## Aggregate AQI USA County Data by Month per Year
 
-```{r AQI_func_load, message=FALSE}
-# Reading and group function by year:
+Each NAAQS pollutant has a separate AQI scale, with an AQI rating of 100 corresponding to the concentration of the Federal Standard for that pollutant. 
+```{r pressure, echo=FALSE, fig.cap="A caption", out.width = '100%'}
+
+AQIjpg<- paste(proydir,imgpath,"AQI.jpg",sep="")
+#AQIjpg<- chartr("/","\\", paste(proydir,imgpath,"AQI.jpg",sep=""))
+
+knitr::include_graphics(AQIjpg)
+
+```
+
+
+```{r AQI_func_load, include=FALSE}
+# Reading and group function by year
 getagg <- function(year){
 
-    pathzip <- paste (airfilepath,filename,year,".zip",sep="")
+      pathzip <- paste (airfilepath,filename,year,".zip",sep="")
     filecsv <- paste (filename,year,".csv",sep="")
 
 # Loading each csv file:  
     df <- read.table(unz(pathzip, filecsv), header=T, quote="\"", sep=",")
-    
-# merging year month field to group by it:
+
+# merging year month field to group by it
     df$yearmm<- paste(substr(df$Date,1,8),"01") 
     df$yearmm<- as.Date(df$yearmm,format="%Y-%m-%d")
     
 # Defining numeric values for the AQI categories:      
-    df$Cat <- ifelse(df$Category=="Good",1,ifelse(df$Category=="Moderate",2,ifelse(df$Category=="Unhealthy for Sensitive Groups",3,ifelse(df$Category=="Unhealthy",4,ifelse(df$Category=="Very Unhealthy",5,ifelse(df$Category=="Hazardous",5,"Raro"))))))
-
-# Inside function,data group by State:
+    df$Cat <- ifelse(df$Category=="Good",1,ifelse(df$Category=="Moderate",2,ifelse(df$Category=="Unhealthy for Sensitive Groups",3,ifelse(df$Category=="Unhealthy",4,ifelse(df$Category=="Very Unhealthy",5,ifelse(df$Category=="Hazardous",5,"Raro")))))) 
+    
+# Inside function,data group by State, maintaining Defining.Parameter: PM2.5, Ozone, CO, NO2, PM10, SO2
 # AQI index is de maximum index of analyzed component AQI = max( AQIPM2.5, AQIPM10, AQIO3, ...)
-    aggdf <- df %>% select(State.Name, county.Name,Cat,AQI, yearmm) %>% group_by(State.Name, county.Name,yearmm) %>%  summarise(maxCat=max(Cat,na.rm=TRUE),maxAQI=max(AQI,na.rm=TRUE),aggnum=n())
+    
+    aggdf1 <- df %>% select(State.Name, county.Name,Cat,Category,AQI, yearmm) %>% group_by(State.Name, county.Name, yearmm) %>%  summarise(Cat=max(Cat,na.rm=TRUE), Category=max(Category,na.rm=TRUE) ,AQI=max(AQI,na.rm=TRUE),aggnum=n())
+ 
+    df1<-df %>% select(State.Name, county.Name,Cat,Category,AQI, yearmm,Defining.Parameter)
+    
+    df2 <- left_join(aggdf1,df1,by=c("State.Name", "county.Name","Cat","Category","AQI", "yearmm"))
+    
+    # erasing duplicated rows
+    aggdf2 <- df2 %>% select(State.Name, county.Name,Cat,Category,AQI, yearmm,Defining.Parameter) %>% group_by(State.Name, county.Name, yearmm) %>%  summarise(Cat=max(Cat,na.rm=TRUE),Category=max(Category,na.rm=TRUE),AQI=max(AQI,na.rm=TRUE),Def_parm=max(Defining.Parameter,na.rm=TRUE),aggnum=n())   
 
-  return (aggdf)
+  return (aggdf2)
 }
 # End of reading and group by function
 ```
@@ -116,10 +137,9 @@ getagg <- function(year){
 # calling function to load and group Air quality data by 2017 to 2020:
 ---
 
-```{r AQI_func_call, message=FALSE}
+```{r AQI_func_call, include=FALSE}
 
-aggtot <- tibble()
-
+aggtot<- tibble()
 # Loop for getting data air quatily
 for (i in 1:length(datayears)){
   aggdata <- getagg(datayears[i])
@@ -170,7 +190,7 @@ no_nulos = aggtotcounties %>% filter(!is.na(area))
 Air_Quality_Indexes <-no_nulos
 
 #Convert to numeric
-Air_Quality_Indexes$maxCat <- as.numeric(Air_Quality_Indexes$maxCat)
+Air_Quality_Indexes$Cat <- as.numeric(Air_Quality_Indexes$Cat)
 head(Air_Quality_Indexes)
 
 # Saving Tibble with AQI data:
@@ -189,7 +209,7 @@ lista <- as.integer(format(list, "%Y%m%d"))
 ----------------------------------------------------------------------------------
 
 ```{r Generate_AQI_png_maps,include=FALSE,results = FALSE}
-#, eval=FALSE
+#
 # Generating a map per year and month with air quality data per county
 
 f_maps <- for (i in 1:length(list)){ 
@@ -197,7 +217,7 @@ df <- no_nulos  %>% filter(yearmm==list[[i]])
  ggUsa <- ggplot(data = world) +
         geom_sf()+
         geom_sf(data = states) +
-        geom_sf(data = df, aes(geometry=geom,fill = maxCat)) +
+        geom_sf(data = df, aes(geometry=geom,fill = Cat)) +
         scale_fill_manual(values=colscateg, name="AQI Categories",breaks=ncateg, labels=categ) +
         geom_label_repel(size=2,fontface="bold",data = states, aes(x = X, y = Y, label = ID), 
         nudge_x = c(1, -1.5, 2, 2, -1), nudge_y = c(0.25, -0.25, 0.5, 0.5, -0.5)) +
