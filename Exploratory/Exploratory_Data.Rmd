@@ -1,18 +1,24 @@
 ---
-title: "Expl_Data_Analysis"
+title: "Exploratory_Data_Analysis"
 author: "Marcos Mariscal"
 date: "23/5/2021"
 output: html_document
 ---
+
+
+
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir= "C:/Users/mmariscal/Documents/TFM-KSCHOOL/TFM-KSCHOOL")
-knitr::opts_chunk$set(error = FALSE)
+
+# Getting project directory 
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+proydir <- rprojroot::find_rstudio_root_file()
+
 ```
 
 ---
-# Calling libraries
+# Calling R libraries
 ---
+
 ```{r call_libraries, include=FALSE}
 library(tidyverse)
 library (tools)
@@ -34,8 +40,9 @@ pngpath="./png/"
 datapath="./Data/"
 
 # Defining file names variables to load the data
-file_aqi_save = "Air_Quality_Indexes.Rdata"
-file_visits_save = "Hosp_visits_pop_by_state.Rdata"
+file_aqi_saved = "Air_Quality_Indexes.Rdata"
+file_visits_saved = "Hosp_visits_pop_by_state.Rdata"
+file_Aggtotdata_save = "AQI_visits_Agg.Rdata"
 
 Years = c(2017,2018,2019,2020)
 ```
@@ -46,8 +53,9 @@ Years = c(2017,2018,2019,2020)
 
 ```{r Load_AirQ, echo=FALSE}
 # Read AQI Visits
-load(file = paste(datapath,file_aqi_save, sep=""))
+load(file = paste(datapath,file_aqi_saved, sep=""))
 head(Air_Quality_Indexes)
+
 ```
 
 ---
@@ -56,25 +64,33 @@ head(Air_Quality_Indexes)
 
 ```{r Load_HospVisits, echo=FALSE}
 # Read Hospital Visits
-load(file = paste(datapath,file_visits_save, sep=""))
+load(file = paste(datapath,file_visits_saved, sep=""))
 head(Hosp_visits_pop_by_state)
+#utils::View(Hosp_visits_pop_by_state)
+
 
 ```
 
 ---------------------------------------------------------------------
 ## Group Air QUality Indexes by States
 ---------------------------------------------------------------------
-Air Quality Indexes Grouped by State and month, having media, median value and standard desviation from: maxCat, maxAQI
+Air Quality Indexes Grouped by USA State and month, having media from: Cat, AQI
 
-```{r AQI_Group_By_State, echo=FALSE}
+```{r AQI_Group_By_State, include=FALSE}
 
-#Air Quality Indexes Grouped by State and month, having media, median value and standard desviation from: maxCat, maxAQI:
-AQI_State_Group <- Air_Quality_Indexes %>% select (State.Name, yearmm, maxCat,maxAQI)  %>% group_by(State.Name, yearmm) %>% summarize(meanCat = mean(maxCat), sdcat = sd(maxCat), mediancat=median(maxCat),meanAQI = mean(maxAQI), sdAQI = sd(maxAQI), medianAQI=median(maxAQI))
+# Air Quality Indexes Grouped by State and month, having median from: Cat, AQI
+# maintaining Defining.Parameter: PM2.5, Ozone, CO, NO2, PM10, SO2
+# AQI index is de maximum index of analyzed component AQI = max( AQIPM2.5, AQIPM10, AQIO3, ...)
+    
 
+     Airaggdf1 <- Air_Quality_Indexes %>% select (State.Name, yearmm, Cat,AQI)  %>% group_by(State.Name, yearmm) %>% summarize(Cat = ceiling(median(Cat)), AQI = ceiling(median(AQI)))
+
+# Match description with numeric values for the AQI categories:      
+    Airaggdf1$Category <- ifelse(Airaggdf1$Cat==1,"Good",ifelse(Airaggdf1$Cat==2,"Moderate",ifelse(Airaggdf1$Cat==3,"Unhealthy for Sensitive Groups",ifelse(Airaggdf1$Cat==4,"Unhealthy",ifelse(Airaggdf1$Cat==5,"Very Unhealthy",ifelse(Airaggdf1$Cat==6,"Hazardous","Raro")))))) 
+
+AQI_State_Group <- Airaggdf1
 AQI_State_Group <- rename(AQI_State_Group, "STATES"="State.Name")
 AQI_State_Group <- rename(AQI_State_Group, "Dates"="yearmm")
-
-head(AQI_State_Group)
 
 ```
 
@@ -92,7 +108,6 @@ TotData_1 <- full_join(x = AQI_State_Group, y =Hosp_visits_pop_by_state , by = c
 
 TotData_1$REGION <- as.numeric(TotData_1$REGION)
 
-
 # Generating a Tibble for USA States abbreviations and regions
 
 statesabbs<- as_tibble(state.name)
@@ -105,34 +120,42 @@ names(statesabbs)[names(statesabbs) == "value"] <- "STATES"
 # Including States abbreviations and regions in TOTAL data
 TotData_2 <- merge(x = TotData_1, y = statesabbs, by= "STATES", all.x = TRUE)
 
-#Erasing records with No Hospital visits data
-TotData = TotData_2 %>% filter(!is.na(All_discharges))
+#removing records with No Hospital Visits data
+Tot_no_null = TotData_2 %>% filter(!is.na(All_discharges))
 
-#Erasing records medianAQI data
-TotData = TotData %>% filter(!is.na(medianAQI))
+#removing records with No AQI data
+Tot_no_null = Tot_no_null %>% filter(!is.na(AQI))
+
+# value 0 to all Na if numeric field
+TotData<- Tot_no_null%>%mutate_if(is.numeric, funs(replace_na(., 0)))
 
 #Generate month field in order to get monthly group data
 
 TotData <- TotData%>%mutate(MONTH= as.integer(format(Dates, "%m")))
-
 utils::View(TotData)
 
 ```
 
 # Now we are going to analyze best data to study the correlation between Air Qaulity Index and the effects of health 
+  Aggregating all years data, monthly bases
+
+```{r TOTAggMonth, message=FALSE}
+# Standard deviation and mean rate of hospital visits per month and USA State
+AggTotData <- TotData %>% group_by(STATES,MONTH,statreg,statabb) %>% summarize(mnVisits = mean(All_discharges), mnPop=mean(POPULATION), mncat=mean(Cat), mnAQI=mean(AQI), mnAges0_4=mean(Ages_0_4), mnAges5_9=mean(Ages_5_9), mnAges10_17=mean(Ages_10_17), mnAges18_44=mean(Ages_18_44), mnAges45_64=mean(Ages_45_64), mnAges65_79=mean(Ages_65_79), mnAges_80=mean(Ages_80), mnMale=mean(Male), mnFemale=mean(Female), mnResL=mean(Resi_L_metro), mnResMS=mean(Resi_M_S_metros+Resi_nonmetro+Resi_missing), mnVent=mean(Missing_income), mnSepti=mean(Use_mech_ventilation), mnPneum=mean(RSP002_pneumonia), mnBron=mean(RSP005_acute_bronchitis),mnPulm=mean(RSP008_chronic_pulmonary), mnAsthma=mean(RSP009_asthma),mnAsp=mean(RSP010_aspiration_pneumonitis), mnResp=mean(RSP012_respiratory_failure), mnOthr=mean(All_other_conditions), mnTotResp=mean(RSP002_pneumonia+RSP005_acute_bronchitis+RSP008_chronic_pulmonary+RSP009_asthma+RSP010_aspiration_pneumonitis+RSP012_respiratory_failure), nyears = n())
+
+#Total Hospital Visits with respiratory diseases vs Population ratio
+AggTotData <- AggTotData%>%mutate(RateVisits= (mnTotResp/mnPop))
+
+```
 
 ---
 # This ggplot graph is to analyze the different State data for Hospital visits with respiratory diseases
 ---
 
-```{r ggplot, message=FALSE}
-
-# Standard deviation and mean rate of hospital visits per month and USA State
-AggTotData <- TotData %>% group_by(STATES,MONTH,statreg,statabb) %>% summarize(mnVisits = mean(All_discharges), sdVisits = sd(All_discharges), mdVisits=median(All_discharges),mnPop = mean(POPULATION), sdPop= sd(POPULATION), mdPop=median(POPULATION),nyears = n())
-
+```{r TOTggplot, message=FALSE}
 f_visits_graphs <- for (i in 1:12){ 
   
-  PartMonthData<- AggTotData %>%select(STATES,MONTH,statreg,statabb,mnVisits,mnPop) %>%filter(MONTH== i)
+  PartMonthData<- AggTotData %>%select(STATES,MONTH,statreg,statabb,mnVisits,mnTotResp,mnPop) %>%filter(MONTH== i)
   
   #Plotting Hospitals Visits vs USA data states points
 
@@ -173,32 +196,10 @@ Visits_g9
 Visits_g10
 Visits_g11
 Visits_g12
-
 ```
 
-# January graphs from 2017 to 2020
 
-
-# Histograms to analyze most relevant States Hospital Visits data 
-
-```{r Histograms, message=FALSE}
-# Feature All_discharges (Hospital Visits with respiratory illness)
-#utils::View(TotData)
-
-AggTotData <- AggTotData%>%mutate(RateVisits= round((mnVisits/mnPop)*100,4))
-
- for (i in 1:12) {
-
-    PartMonthData<- AggTotData %>%select(STATES,MONTH,statreg,statabb,mnVisits,mnPop,RateVisits) %>%filter(MONTH== i)
-
-    histogr <-hist(PartMonthData$RateVisits, breaks=20, xlim=c(0,0.2), ylim=c(0,10) , col=rgb(1,0,0,0.5) , xlab="Hosp.Visits rate by Population" , ylab="count" , main=paste("Month ",month.name[i],sep="") )
-    
-   assign(paste("histogr_",i,sep=""), (histogr))
- }
-
-```
-
-# We can see that in general most data are in interval 0.03 and 0.1 rates
+# We can see that in general ...
 
 # Now plotting states and Hosp.Visit rates by Month
 
@@ -207,7 +208,7 @@ AggTotData <- AggTotData%>%mutate(RateVisits= round((mnVisits/mnPop)*100,4))
  for (i in 1:12) {
 
    # Filtering Data by Month 
-   PartMonthData<- AggTotData %>%select(STATES,MONTH,statreg,statabb,mnVisits,mnPop,RateVisits) %>%filter(MONTH== i)
+   PartMonthData<- AggTotData %>%select(STATES,MONTH,statreg,statabb,mnTotResp,mnPop,RateVisits) %>%filter(MONTH== i)
    
     #Arrange Data by Hospital visits vs Population rate
     PartMonthData <-PartMonthData %>% arrange(-RateVisits)
@@ -219,10 +220,10 @@ AggTotData <- AggTotData%>%mutate(RateVisits= round((mnVisits/mnPop)*100,4))
     states_graph <-  ggplot(data=PartMonthData, aes(x=reorder(STATES,-RateVisits), y=RateVisits,fill=STATES)) +  
      geom_bar(stat="identity", width=0.8) +  
      theme(axis.text.x = element_blank(),aspect.ratio=6/4 )+ xlab("Usa States")+ ylab("Hospital visits vs Population rate")+ 
-     scale_fill_manual(labels=StatesOrd,values =getPalette,name = "States Order by Hosp.Visits rate" )+
-     ggtitle(paste("Usa States order byHosp.Visits vs Population rate at ",month.name[i],sep=""))+
+     scale_fill_manual(labels=StatesOrd,values =getPalette,name = "States Ordered by Hosp.Visits rate" )+
+     ggtitle(paste("Usa States ordered by Hosp.Visits vs Population rate at ",month.name[i],sep=""))+
      theme(plot.title = element_text(vjust = 0),legend.key.size = unit(0.4, "cm"),legend.key.width = unit(0.4,"cm") )+
-     scale_y_continuous(limits=c(0,0.135))
+     scale_y_continuous(limits=c(0,0.00099))
     
    assign(paste("states_graph_",i,sep=""), (states_graph))
  }
@@ -230,7 +231,6 @@ AggTotData <- AggTotData%>%mutate(RateVisits= round((mnVisits/mnPop)*100,4))
 ```
 
 ```{r States_HospV_graph}
-
 states_graph_1
 states_graph_2
 states_graph_3
@@ -243,23 +243,68 @@ states_graph_9
 states_graph_10
 states_graph_11
 states_graph_12
-
 ```
 
 # We can see that 10 Sates always repeat with high rates of Hosp.Visits  each year from 2017 to 2020
 
-## Analyzing Air Quality Data
+## Analyzing Air Quality Data on USA States
+# Standard deviation and mean rate of Air Quality Indexes per month and USA States
 
-```{r}
 
+```{r AQI graph1 ,include=FALSE}
+
+#utils::View(AggTotData)
+
+ for (i in 1:12) {
+   # Filtering Data by Month 
+    aggtotd <- AggTotData%>%select(statabb,MONTH,RateVisits,mnAQI)%>%filter(MONTH== i)
+    aggtotd$RateVisits <- aggtotd$RateVisits*10^5
+   
+    #Arrange Data by Hospital visits  vs Population rate
+
+    StatesOrd <- aggtotd$STATES
+    
+    AggTotd_long <- aggtotd %>% gather( "Keys", "values",-statabb,-MONTH,-STATES,-statreg)
+    
+    getPalette <- colorRampPalette(brewer.pal(9, "Set1"))(44)
+
+    states_graph <-  ggplot(data=AggTotd_long, aes(x=reorder(statabb,-values), y = values, fill = Keys)) +  
+    geom_bar(stat="identity", position = 'stack', width=0.9) +  
+    theme(aspect.ratio=4/8 )+ xlab("Usa States")+ ylab("Hospital visits ratio (10^5)")+ 
+     ggtitle(paste("Hosp.Visits ratio vs Air Quality Index",month.name[i],sep=" "))+
+     theme(plot.title = element_text(vjust = 0),legend.key.size = unit(0.4, "cm"),legend.key.width = unit(0.4,"cm") )+
+     scale_y_continuous( sec.axis = sec_axis(~ . * 1000, name = "Air Quality Index"))+
+      scale_x_discrete(guide = guide_axis(n.dodge=3))
+    
+   assign(paste("states_tot_",i,sep=""), (states_graph))
+ }
 ```
 
-
-
-
-#Correlation
+Presenting Hospital Visits rate vs Air Quality Indexes in all months
+There is en evident correlation between this two features 
 
 ```{r}
-
+states_tot_1
+states_tot_2
+states_tot_3
+states_tot_4
+states_tot_5
+states_tot_6
+states_tot_7
+states_tot_8
+states_tot_9
+states_tot_10
+states_tot_11
+states_tot_12
 ```
 
+## Its is clear than there is a correlation between Hospital Visits ratio and the Air Quality Index
+every month of the year
+
+
+Saving Aggregated Data for the next Notebook
+
+```{r saving_data}
+# Saving in a data file the Tibble with Hospital data Visits and States population:
+save(AggTotData, file = paste(datapath,file_Aggtotdata_save,sep=""))
+```
