@@ -12,7 +12,6 @@ output: html_document
 # Getting project directory 
 knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
 proydir <- rprojroot::find_rstudio_root_file()
-
 ```
 
 ---
@@ -34,7 +33,7 @@ library(cowplot)
 ---
 ## Enviroment variables definition
 ---
-```{r aqidefs, include=FALSE}
+```{r envdefs, include=FALSE}
 airfilepath="./Data/Air_Quality/"
 pngpath="./png/"
 datapath="./Data/"
@@ -126,13 +125,13 @@ Tot_no_null = TotData_2 %>% filter(!is.na(All_discharges))
 #removing records with No AQI data
 Tot_no_null = Tot_no_null %>% filter(!is.na(AQI))
 
-# value 0 to all Na if numeric field
-TotData<- Tot_no_null%>%mutate_if(is.numeric, funs(replace_na(., 0)))
+#For representing data, we need to transform null in zeros
+Tot_no_null<- Tot_no_null%>%mutate_if(is.numeric, funs(replace_na(., 0)))
 
 #Generate month field in order to get monthly group data
 
-TotData <- TotData%>%mutate(MONTH= as.integer(format(Dates, "%m")))
-utils::View(TotData)
+TotData <- Tot_no_null%>%mutate(MONTH= as.integer(format(Dates, "%m")))
+#utils::View(TotData)
 
 ```
 
@@ -141,7 +140,7 @@ utils::View(TotData)
 
 ```{r TOTAggMonth, message=FALSE}
 # Standard deviation and mean rate of hospital visits per month and USA State
-AggTotData <- TotData %>% group_by(STATES,MONTH,statreg,statabb) %>% summarize(mnVisits = mean(All_discharges), mnPop=mean(POPULATION), mncat=mean(Cat), mnAQI=mean(AQI), mnAges0_4=mean(Ages_0_4), mnAges5_9=mean(Ages_5_9), mnAges10_17=mean(Ages_10_17), mnAges18_44=mean(Ages_18_44), mnAges45_64=mean(Ages_45_64), mnAges65_79=mean(Ages_65_79), mnAges_80=mean(Ages_80), mnMale=mean(Male), mnFemale=mean(Female), mnResL=mean(Resi_L_metro), mnResMS=mean(Resi_M_S_metros+Resi_nonmetro+Resi_missing), mnVent=mean(Missing_income), mnSepti=mean(Use_mech_ventilation), mnPneum=mean(RSP002_pneumonia), mnBron=mean(RSP005_acute_bronchitis),mnPulm=mean(RSP008_chronic_pulmonary), mnAsthma=mean(RSP009_asthma),mnAsp=mean(RSP010_aspiration_pneumonitis), mnResp=mean(RSP012_respiratory_failure), mnOthr=mean(All_other_conditions), mnTotResp=mean(RSP002_pneumonia+RSP005_acute_bronchitis+RSP008_chronic_pulmonary+RSP009_asthma+RSP010_aspiration_pneumonitis+RSP012_respiratory_failure), nyears = n())
+AggTotData <- TotData %>% group_by(STATES,MONTH,statreg,statabb) %>% summarize(mnVisits = mean(All_discharges), mnPop=mean(POPULATION), mncat=mean(Cat), mnAQI=mean(AQI), mnAges0_4=mean(Ages_0_4), mnAges5_9=mean(Ages_5_9), mnAges10_17=mean(Ages_10_17), mnAges18_44=mean(Ages_18_44), mnAges45_64=mean(Ages_45_64), mnAges65_79=mean(Ages_65_79), mnAges_80=mean(Ages_80), mnMale=mean(Male), mnFemale=mean(Female), mnResL=mean(Resi_L_metro), mnResMS=mean(Resi_M_S_metros+Resi_nonmetro+Resi_missing), mnVent=mean(Missing_income), mnSepti=mean(Use_mech_ventilation), mnPneum=mean(RSP002_pneumonia), mnBron=mean(RSP005_acute_bronchitis),mnPulm=mean(RSP008_chronic_pulmonary), mnAsthma=mean(RSP009_asthma),mnAsp=mean(RSP010_aspiration_pneumonitis), mnResp=mean(RSP012_respiratory_failure), mnOthr=mean(All_other_conditions), mnTotResp=mean(RSP002_pneumonia+RSP005_acute_bronchitis+RSP008_chronic_pulmonary+RSP009_asthma+RSP010_aspiration_pneumonitis+ RSP012_respiratory_failure), nyears = n())
 
 #Total Hospital Visits with respiratory diseases vs Population ratio
 AggTotData <- AggTotData%>%mutate(RateVisits= (mnTotResp/mnPop))
@@ -271,10 +270,10 @@ states_graph_12
     states_graph <-  ggplot(data=AggTotd_long, aes(x=reorder(statabb,-values), y = values, fill = Keys)) +  
     geom_bar(stat="identity", position = 'stack', width=0.9) +  
     theme(aspect.ratio=4/8 )+ xlab("Usa States")+ ylab("Hospital visits ratio (10^5)")+ 
-     ggtitle(paste("Hosp.Visits ratio vs Air Quality Index",month.name[i],sep=" "))+
-     theme(plot.title = element_text(vjust = 0),legend.key.size = unit(0.4, "cm"),legend.key.width = unit(0.4,"cm") )+
-     scale_y_continuous( sec.axis = sec_axis(~ . * 1000, name = "Air Quality Index"))+
-      scale_x_discrete(guide = guide_axis(n.dodge=3))
+    ggtitle(paste("Hosp.Visits ratio vs Air Quality Index",month.name[i],sep=" "))+
+    theme(plot.title = element_text(vjust = 0),legend.key.size = unit(0.4, "cm"),legend.key.width = unit(0.4,"cm") )+
+    scale_y_continuous( sec.axis = sec_axis(~ . * 1000, name = "Air Quality Index"))+
+    scale_x_discrete(guide = guide_axis(n.dodge=3))
     
    assign(paste("states_tot_",i,sep=""), (states_graph))
  }
@@ -306,5 +305,5 @@ Saving Aggregated Data for the next Notebook
 
 ```{r saving_data}
 # Saving in a data file the Tibble with Hospital data Visits and States population:
-save(AggTotData, file = paste(datapath,file_Aggtotdata_save,sep=""))
+save(AggTotData, file = paste(datapath,file_AggTotData,sep=""))
 ```
