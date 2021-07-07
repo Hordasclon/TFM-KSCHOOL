@@ -23,7 +23,7 @@ library(tidyverse)
 library(R.utils)
 library(mice)
 library(patchwork)
-library(Hmisc)
+#library(Hmisc). Not Compatible with Summarize function
 library(PerformanceAnalytics)
 library(corrplot)
 
@@ -38,52 +38,62 @@ airfilepath="./Data/Air_Quality/"
 pngpath="./png/"
 datapath="./Data/"
 
-# Defining file names variables to load the data
-file_AggTotData = "AggTotData.Rdata"
-file_TotRespData="TotRespData.Rdata"
+# Defining file names variables to load and save the data
+file_TotData = "TotData.Rdata"
+file_TotRespData_save = "TotRespData.Rdata"
 ```
 
-
+Loading Data field of Hosp.Visits and AQI data
 
 ```{r Load_TotAgg, echo=FALSE}
 # Read AQI Visits
-load(file = paste(datapath,file_AggTotData, sep=""))
-head(AggTotData)
-# utils::View(AggTotData)
+load(file = paste(datapath,file_TotData, sep=""))
+head(TotData)
+# utils::View(TotData)
 ```
 
 # Replace Zeros to NA for all numeric columns
 
+```{r TotRespData, include=FALSE}
+
+TotRespData <- TotData%>%select(STATES,statabb,Dates, MONTH, statreg, AQI, Cat,Category,All_discharges, POPULATION, TotResp, RateRespVisits, RSP002_pneumonia, RSP008_chronic_pulmonary, RSP012_respiratory_failure, RSP005_acute_bronchitis, RSP009_asthma, RSP010_aspiration_pneumonitis, Ages_0_4, Ages_5_9,  Ages_10_17,  Ages_18_44 , Ages_45_64,  Ages_65_79,  Ages_80, Use_mech_ventilation)
+```
+
+
 ```{r replace, include=FALSE}
 
-AggTotData <- AggTotData %>% mutate_at(vars(-c(STATES,MONTH,statreg,statabb)), ~replace(., isZero(.), NA))
+TotRespData <- TotRespData %>% mutate_at(vars(-c(STATES,statabb,Dates, MONTH, statreg, AQI, Cat,Category)), ~replace(., isZero(.), NA))
 
 ```
 
 Count the number of the NA values
 
 ```{r zeros, include=FALSE}
-Num_NA <- sapply(AggTotData, function(y) length(which(is.na(y) == T)))
-NA_Count <- data.frame(Item = colnames(AggTotData), Count = Num_NA)
+Num_NA <- sapply(TotRespData, function(y) length(which(is.na(y) == T)))
+NA_Count <- data.frame(Item = colnames(TotRespData), Count = Num_NA)
 NA_Count
-
 ```
+
+
+
+
+
 ```{r pmm, include=FALSE,echo=FALSE}
 # To complete NA values, we will use predictive mean matching (pmm) (multi nominal logistic regression)
-DataCompl <- AggTotData%>%select (STATES,MONTH,statreg,statabb,mnAges0_4,
-                                    mnAges5_9,mnAges10_17,mnAges18_44,mnResL,mnVent,mnSepti,mnBron,mnAsthma,mnAsp)
+
+DataCompl <- TotRespData%>%select (statabb,Dates,MONTH,Ages_0_4, Ages_5_9, Ages_10_17, Ages_18_44, RSP005_acute_bronchitis, RSP002_pneumonia, RSP009_asthma, RSP010_aspiration_pneumonitis,Use_mech_ventilation)
+
 impute <- mice(DataCompl, m = 5, seed = 153)
 
-impute$imp$mnAges0_4
-impute$imp$mnAges5_9
-impute$imp$mnAges10_17
-impute$imp$mnAges18_44
-impute$imp$mnResL
-impute$imp$mnVent
-impute$imp$mnSepti
-impute$imp$mnBron
-impute$imp$mnAsthma
-impute$imp$mnAsp
+impute$imp$Ages_0_4
+impute$imp$Ages_5_9
+impute$imp$Ages_10_17
+impute$imp$Ages_18_44
+impute$imp$RSP002_pneumonia
+impute$imp$RSP005_acute_bronchitis
+impute$imp$RSP009_asthma
+impute$imp$RSP010_aspiration_pneumonitis
+impute$imp$Use_mech_ventilation
 
 Completed <- complete(impute, 2)
 
@@ -92,16 +102,16 @@ Completed <- complete(impute, 2)
 # Distribution of imputed values with observed ones for Hosp.visits per age ranges
 
 ```{r Age_Ranges, fig.show="hold", out.width="50%"}
-p1 <- ggplot(Completed) + geom_point(aes(statabb,mnAges0_4))+
+p1 <- ggplot(Completed) + geom_point(aes(statabb,Ages_0_4))+
     scale_x_discrete(guide = guide_axis(n.dodge=3), name = "USA States")+ 
-    ggtitle("Hosp.Visits in ages ranges")
-p2 <- ggplot(Completed) + geom_point(aes(statabb,mnAges5_9))+
+    ggtitle("Hosp.Visits in Ages ranges")
+p2 <- ggplot(Completed) + geom_point(aes(statabb,Ages_5_9))+
     scale_x_discrete(guide = guide_axis(n.dodge=3), name = "USA States")+
     ggtitle("Hosp.Visits in ages ranges")
-p3 <- ggplot(Completed) + geom_point(aes(statabb,mnAges10_17))+
+p3 <- ggplot(Completed) + geom_point(aes(statabb,Ages_10_17))+
     scale_x_discrete(guide = guide_axis(n.dodge=3), name = "USA States")+
     ggtitle("Hosp.Visits in ages ranges")
-p4 <- ggplot(Completed) + geom_point(aes(statabb,mnAges18_44))+
+p4 <- ggplot(Completed) + geom_point(aes(statabb,Ages_18_44))+
     scale_x_discrete(guide = guide_axis(n.dodge=3), name = "USA States")+
     ggtitle("Hosp.Visits in ages ranges")
 p1 + p2 + p3 + p4
@@ -110,19 +120,19 @@ p1 + p2 + p3 + p4
 # Distribution of imputed values with observed ones for different respiratori ilnesses
 
 ```{r Respiratory, fig.show="hold", out.width="50%"}
-p5 <-  ggplot(Completed) + geom_point(aes(MONTH,mnVent))+
+p5 <-  ggplot(Completed) + geom_point(aes(MONTH,RSP002_pneumonia))+
     scale_x_discrete(guide = guide_axis(n.dodge=3), name = "Months")+
     ggtitle("Hospital Visits")
-p6 <-  ggplot(Completed) + geom_point(aes(MONTH,mnSepti))+
+p6 <-  ggplot(Completed) + geom_point(aes(MONTH,RSP005_acute_bronchitis))+
     scale_x_discrete(guide = guide_axis(n.dodge=3), name = "Months")+
     ggtitle("Hospital Visits")
-p7 <-  ggplot(Completed) + geom_point(aes(MONTH,mnBron))+
+p7 <-  ggplot(Completed) + geom_point(aes(MONTH,RSP009_asthma))+
     scale_x_discrete(guide = guide_axis(n.dodge=3), name = "Months")+
     ggtitle("Hospital Visits")
-p8 <-  ggplot(Completed) + geom_point(aes(MONTH,mnAsthma))+
+p8 <-  ggplot(Completed) + geom_point(aes(MONTH,RSP010_aspiration_pneumonitis))+
     scale_x_discrete(guide = guide_axis(n.dodge=3), name = "Months")+
     ggtitle("Hospital Visits")
-p9 <-  ggplot(Completed) + geom_point(aes(MONTH,mnAsp))+
+p9 <-  ggplot(Completed) + geom_point(aes(MONTH,Use_mech_ventilation))+
     scale_x_discrete(guide = guide_axis(n.dodge=3), name = "Months")+
     ggtitle("Hospital Visits")
 p5 + p6 + p7 + p8 + p9
@@ -132,14 +142,10 @@ p5 + p6 + p7 + p8 + p9
 
 ```{r}
 
-AggTotT1 <- AggTotData%>%select (-c(statabb,mnAges0_4, mnAges5_9,mnAges10_17,mnAges18_44,mnResL,mnVent,mnSepti,mnBron,mnAsthma,mnAsp))
-TotData <- inner_join(x = AggTotT1, y =Completed , by = c("STATES","MONTH","statreg"))
+AggTotT1 <- TotRespData%>%select (-c(MONTH,Ages_0_4, Ages_5_9, Ages_10_17, Ages_18_44, RSP005_acute_bronchitis, RSP002_pneumonia, RSP009_asthma, RSP010_aspiration_pneumonitis,Use_mech_ventilation))
+TotRespData <- inner_join(x = AggTotT1, y =Completed , by = c("statabb","Dates"))
 
-TotData <- TotData%>%mutate(rateRespVisits= (mnTotResp/mnPop))
-
-TotRespData <- TotData%>%select(STATES,statabb, MONTH, statreg, mnAQI, mncat, mnPop, mnTotResp, rateRespVisits, mnPneum, mnPulm, mnResp, mnBron, mnAsthma, mnAsp)
-
-TotRespData%>%rename( RSP002_pneumonia= mnPneum,RSP005_acute_bronchitis=mnBron, RSP008_chronic_pulmonary=mnPulm, RSP009_asthma=mnAsthma, RSP010_aspiration_pneumonitis=mnAsp,  RSP012_respiratory_failure=mnResp)
+TotRespData<- TotRespData%>%select(STATES,statabb,Dates,MONTH,statreg,Category,Cat,AQI,Ages_0_4, Ages_5_9, Ages_10_17, Ages_18_44, Ages_45_64,Ages_65_79, Ages_80, RSP002_pneumonia, RSP005_acute_bronchitis, RSP008_chronic_pulmonary,  RSP009_asthma, RSP010_aspiration_pneumonitis, RSP012_respiratory_failure, Use_mech_ventilation, RateRespVisits, TotResp, POPULATION, All_discharges)
 
 ```
 
@@ -151,18 +157,16 @@ TotRespData%>%rename( RSP002_pneumonia= mnPneum,RSP005_acute_bronchitis=mnBron, 
 set.seed(7)
 
 # calculate correlation aggtotd
-correlationMatrix <- cor(TotRespData[,5:15])
+correlationMatrix <- cor(TotRespData[,8:26])
 correlationMatrix
 ```
 
 
 ```{r corrgraph}
-correlationtest <- rcorr(as.matrix(TotRespData[,5:15]))
-
-chart.Correlation(TotRespData[,5:15], histogram = T, pch = 19)
+chart.Correlation(TotRespData[,9:26], histogram = T, pch = 19)
 
 ```
-```{r corrnumbers,  fig.show="hold",out.width="100%"}
+```{r corrnumbers,  fig.show="hold",out.width="120%"}
 corrplot(correlationMatrix, method="number")
 ```
 
@@ -172,9 +176,7 @@ palette = colorRampPalette(c("blue", "white", "red")) (20)
 heatmap(x = correlationMatrix, col = palette, symm = TRUE)
 ```
 
-```{r printcorr,  fig.show="hold",out.width="120%"}
-
-par(mfrow=c(2,2))
+```{r printcorr1,  fig.show="hold",out.width="120%"}
 
 c1<-corrplot(correlationMatrix, method="circle")
 c2<-corrplot(correlationMatrix, method="pie")
@@ -183,7 +185,9 @@ c4<-corrplot(correlationMatrix, method="square")
 
 ```
 
+
 ```{r saving_data}
 # Saving in a data file the Tibble with Hospital data Visits only with Respiratory ilnesses and AQI data by USA States:
-save(TotRespData, file = paste(datapath,file_TotRespData,sep=""))
+save(TotRespData, file = paste(datapath,file_TotRespData_save,sep=""))
+
 ```

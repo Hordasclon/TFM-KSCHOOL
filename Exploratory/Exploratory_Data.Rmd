@@ -28,6 +28,7 @@ library(ggrepel)
 require(gridExtra)
 library(RColorBrewer)
 library(cowplot)
+
 ```
 
 ---
@@ -41,7 +42,7 @@ datapath="./Data/"
 # Defining file names variables to load the data
 file_aqi_saved = "Air_Quality_Indexes.Rdata"
 file_visits_saved = "Hosp_visits_pop_by_state.Rdata"
-file_Aggtotdata_save = "AQI_visits_Agg.Rdata"
+file_TotData_save = "TotData.Rdata"
 
 Years = c(2017,2018,2019,2020)
 ```
@@ -82,7 +83,7 @@ Air Quality Indexes Grouped by USA State and month, having media from: Cat, AQI
 # AQI index is de maximum index of analyzed component AQI = max( AQIPM2.5, AQIPM10, AQIO3, ...)
     
 
-     Airaggdf1 <- Air_Quality_Indexes %>% select (State.Name, yearmm, Cat,AQI)  %>% group_by(State.Name, yearmm) %>% summarize(Cat = ceiling(median(Cat)), AQI = ceiling(median(AQI)))
+     Airaggdf1 <- Air_Quality_Indexes %>% select (State.Name, yearmm, Cat,AQI)  %>% group_by(State.Name, yearmm) %>% summarize(Cat = ceiling(mean(Cat)), AQI = ceiling(mean(AQI)))
 
 # Match description with numeric values for the AQI categories:      
     Airaggdf1$Category <- ifelse(Airaggdf1$Cat==1,"Good",ifelse(Airaggdf1$Cat==2,"Moderate",ifelse(Airaggdf1$Cat==3,"Unhealthy for Sensitive Groups",ifelse(Airaggdf1$Cat==4,"Unhealthy",ifelse(Airaggdf1$Cat==5,"Very Unhealthy",ifelse(Airaggdf1$Cat==6,"Hazardous","Raro")))))) 
@@ -140,10 +141,16 @@ TotData <- Tot_no_null%>%mutate(MONTH= as.integer(format(Dates, "%m")))
 
 ```{r TOTAggMonth, message=FALSE}
 # Standard deviation and mean rate of hospital visits per month and USA State
-AggTotData <- TotData %>% group_by(STATES,MONTH,statreg,statabb) %>% summarize(mnVisits = mean(All_discharges), mnPop=mean(POPULATION), mncat=mean(Cat), mnAQI=mean(AQI), mnAges0_4=mean(Ages_0_4), mnAges5_9=mean(Ages_5_9), mnAges10_17=mean(Ages_10_17), mnAges18_44=mean(Ages_18_44), mnAges45_64=mean(Ages_45_64), mnAges65_79=mean(Ages_65_79), mnAges_80=mean(Ages_80), mnMale=mean(Male), mnFemale=mean(Female), mnResL=mean(Resi_L_metro), mnResMS=mean(Resi_M_S_metros+Resi_nonmetro+Resi_missing), mnVent=mean(Missing_income), mnSepti=mean(Use_mech_ventilation), mnPneum=mean(RSP002_pneumonia), mnBron=mean(RSP005_acute_bronchitis),mnPulm=mean(RSP008_chronic_pulmonary), mnAsthma=mean(RSP009_asthma),mnAsp=mean(RSP010_aspiration_pneumonitis), mnResp=mean(RSP012_respiratory_failure), mnOthr=mean(All_other_conditions), mnTotResp=mean(RSP002_pneumonia+RSP005_acute_bronchitis+RSP008_chronic_pulmonary+RSP009_asthma+RSP010_aspiration_pneumonitis+ RSP012_respiratory_failure), nyears = n())
+#AggTotData <- TotData %>% group_by(STATES,MONTH,statreg,statabb) %>% summarize(mnVisits = mean(All_discharges), mnPop=mean(POPULATION), mncat=mean(Cat), mnAQI=mean(AQI), mnAges0_4=mean(Ages_0_4), mnAges5_9=mean(Ages_5_9), mnAges10_17=mean(Ages_10_17), mnAges18_44=mean(Ages_18_44), mnAges45_64=mean(Ages_45_64), mnAges65_79=mean(Ages_65_79), mnAges_80=mean(Ages_80), mnMale=mean(Male), mnFemale=mean(Female), mnResL=mean(Resi_L_metro), mnResMS=mean(Resi_M_S_metros+Resi_nonmetro+Resi_missing), mnVent=mean(Missing_income), mnSepti=mean(Use_mech_ventilation), mnPneum=mean(RSP002_pneumonia), mnBron=mean(RSP005_acute_bronchitis),mnPulm=mean(RSP008_chronic_pulmonary), mnAsthma=mean(RSP009_asthma),mnAsp=mean(RSP010_aspiration_pneumonitis), mnResp=mean(RSP012_respiratory_failure), mnOthr=mean(All_other_conditions), mnTotResp=mean(RSP002_pneumonia+RSP005_acute_bronchitis+RSP008_chronic_pulmonary+RSP009_asthma+RSP010_aspiration_pneumonitis+ RSP012_respiratory_failure), nyears = n())
+
+TotData <- mutate(TotData,TotResp=RSP002_pneumonia+RSP005_acute_bronchitis+RSP008_chronic_pulmonary+RSP009_asthma+RSP010_aspiration_pneumonitis+ RSP012_respiratory_failure)
 
 #Total Hospital Visits with respiratory diseases vs Population ratio
-AggTotData <- AggTotData%>%mutate(RateVisits= (mnTotResp/mnPop))
+TotData <- TotData%>%mutate(RateRespVisits= (TotResp/POPULATION))
+
+# Total Monthly Data to plot the most Hops. Visits by STATE
+
+MonthData<- TotData %>%select(STATES,MONTH,statreg,statabb,TotResp,POPULATION,AQI,RateRespVisits) %>% group_by(STATES,MONTH,statreg,statabb) %>% summarize(mnPop=mean(POPULATION),mnTotResp=mean(TotResp),mnRateRespVisits=mean(RateRespVisits),mnAQI=mean(AQI))
 
 ```
 
@@ -154,13 +161,13 @@ AggTotData <- AggTotData%>%mutate(RateVisits= (mnTotResp/mnPop))
 ```{r TOTggplot, message=FALSE}
 f_visits_graphs <- for (i in 1:12){ 
   
-  PartMonthData<- AggTotData %>%select(STATES,MONTH,statreg,statabb,mnVisits,mnTotResp,mnPop) %>%filter(MONTH== i)
+  PartMonthData<- MonthData %>%select(MONTH,statreg,statabb,mnPop,mnTotResp) %>%filter(MONTH== i)
   
   #Plotting Hospitals Visits vs USA data states points
 
   Visit_graph <- PartMonthData%>% ggplot()+
-    geom_point(aes(x =mnPop/10^6, y =mnVisits, col=statreg),size = 2) + 
-    geom_text_repel(aes(mnPop/10^6, mnVisits, label = statabb), nudge_x = -0.1,nudge_y = 0.1)+
+    geom_point(aes(x =mnPop/10^6, y =mnTotResp, col=statreg),size = 2) + 
+    geom_text_repel(aes(mnPop/10^6, mnTotResp, label = statabb), nudge_x = -0.1,nudge_y = 0.1)+
     scale_x_continuous(trans = "log10") +scale_y_continuous(trans = "log10")+ 
     ylab("Total Hospital Visits with respiratory diseases (log scale)") +
     xlab(" (Population (log scale)") +
@@ -169,7 +176,7 @@ f_visits_graphs <- for (i in 1:12){
   
   #Including average line to refer the distance from it with the States Hosp.visits with respiratory diseases
   
-  avline <- PartMonthData %>%  summarize(rate = sum(mnVisits)/ sum(mnPop) * 10^6)  %>% pull(rate)
+  avline <- PartMonthData %>%  summarize(rate = sum(mnTotResp)/ sum(mnPop) * 10^6)  %>% pull(rate)
   
   line <- mean(unlist(avline))
   
@@ -181,20 +188,20 @@ f_visits_graphs <- for (i in 1:12){
 ```
 
 # Visual analysis for Hospital visits with respiratory diseases aggretated Data by Month
+For January Data
+```{r Janggplot1, fig.show="hold", out.width="120%"}
 
-```{r Janggplot, message=FALSE}
 Visits_g1
-Visits_g2
-Visits_g3
+
+```
+
+
+# Visual analysis for Hospital visits with respiratory diseases aggretated Data by Month
+From January to April
+```{r Janggplot2, fig.show="hold", out.width="120%"}
+
 Visits_g4
-Visits_g5
-Visits_g6
-Visits_g7
-Visits_g8
-Visits_g9
-Visits_g10
-Visits_g11
-Visits_g12
+
 ```
 
 
@@ -205,18 +212,17 @@ Visits_g12
 ```{r States_HospV ,include=FALSE}
 
  for (i in 1:12) {
-
    # Filtering Data by Month 
-   PartMonthData<- AggTotData %>%select(STATES,MONTH,statreg,statabb,mnTotResp,mnPop,RateVisits) %>%filter(MONTH== i)
-   
-    #Arrange Data by Hospital visits vs Population rate
-    PartMonthData <-PartMonthData %>% arrange(-RateVisits)
+   PartMonthData<- MonthData %>%select(STATES,MONTH,statreg,statabb,mnPop,mnTotResp,mnRateRespVisits) %>%filter(MONTH== i)
+
+       #Arrange Data by Hospital visits vs Population rate
+    PartMonthData <-PartMonthData %>% arrange(-mnRateRespVisits)
     StatesOrd <- PartMonthData$STATES
     
     getPalette <- colorRampPalette(brewer.pal(9, "Set1"))(44)
 
     
-    states_graph <-  ggplot(data=PartMonthData, aes(x=reorder(STATES,-RateVisits), y=RateVisits,fill=STATES)) +  
+    states_graph <-  ggplot(data=PartMonthData, aes(x=reorder(STATES,-mnRateRespVisits), y=mnRateRespVisits,fill=STATES)) +  
      geom_bar(stat="identity", width=0.8) +  
      theme(axis.text.x = element_blank(),aspect.ratio=6/4 )+ xlab("Usa States")+ ylab("Hospital visits vs Population rate")+ 
      scale_fill_manual(labels=StatesOrd,values =getPalette,name = "States Ordered by Hosp.Visits rate" )+
@@ -252,22 +258,22 @@ states_graph_12
 
 ```{r AQI graph1 ,include=FALSE}
 
-#utils::View(AggTotData)
+#utils::View(TotData)
 
  for (i in 1:12) {
    # Filtering Data by Month 
-    aggtotd <- AggTotData%>%select(statabb,MONTH,RateVisits,mnAQI)%>%filter(MONTH== i)
-    aggtotd$RateVisits <- aggtotd$RateVisits*10^5
+    partmonthdata <- MonthData%>%select(statabb,MONTH,mnRateRespVisits,mnAQI)%>%filter(MONTH== i)
+    partmonthdata$mnRateRespVisits <- partmonthdata$mnRateRespVisits*10^5
    
     #Arrange Data by Hospital visits  vs Population rate
 
-    StatesOrd <- aggtotd$STATES
+    StatesOrd <- partmonthdata$STATES
     
-    AggTotd_long <- aggtotd %>% gather( "Keys", "values",-statabb,-MONTH,-STATES,-statreg)
+    partmonthdata_long <- partmonthdata %>% gather( "Keys", "values",-statabb,-MONTH,-STATES,-statreg)
     
     getPalette <- colorRampPalette(brewer.pal(9, "Set1"))(44)
 
-    states_graph <-  ggplot(data=AggTotd_long, aes(x=reorder(statabb,-values), y = values, fill = Keys)) +  
+    states_graph <-  ggplot(data=partmonthdata_long, aes(x=reorder(statabb,-values), y = values, fill = Keys)) +  
     geom_bar(stat="identity", position = 'stack', width=0.9) +  
     theme(aspect.ratio=4/8 )+ xlab("Usa States")+ ylab("Hospital visits ratio (10^5)")+ 
     ggtitle(paste("Hosp.Visits ratio vs Air Quality Index",month.name[i],sep=" "))+
@@ -305,5 +311,5 @@ Saving Aggregated Data for the next Notebook
 
 ```{r saving_data}
 # Saving in a data file the Tibble with Hospital data Visits and States population:
-save(AggTotData, file = paste(datapath,file_AggTotData,sep=""))
+save(TotData, file = paste(datapath,file_TotData_save,sep=""))
 ```
