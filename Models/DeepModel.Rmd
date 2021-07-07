@@ -93,3 +93,4 @@ n <- neuralnet(AQI ~ RSP002_pneumonia+RSP005_acute_bronchitis+RSP008_chronic_pul
                rep=1,)
 ```
 
+Training in another computer
