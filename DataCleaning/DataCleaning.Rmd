@@ -23,7 +23,9 @@ proydir <- rprojroot::find_rstudio_root_file()
 #install.packages("magick") .- To generate animations with pre-built maps
 #install.packages("readxl") .- for reading excel files
 #install.packages("R.utils").- To get several functions like isZero 
-#install.packages("patchwork") 
+#install.packages("patchwork")
+#install.packages("psych")
+#install.packages("MLmetrics")
 ## Calling for the nedeed libraries:
 
 ```{r libraries_calls, message=FALSE}
