@@ -1,9 +1,9 @@
 MIME-Version: 1.0
-Content-Type: multipart/related; boundary="----=_NextPart_01D77422.A2E5ACB0"
+Content-Type: multipart/related; boundary="----=_NextPart_01D77423.21C624B0"
 
 Este documento es una página web de un solo archivo, también conocido como archivo de almacenamiento web. Si está viendo este mensaje, su explorador o editor no admite archivos de almacenamiento web. Descargue un explorador que admita este tipo de archivos, como Windows® Internet Explorer®.
 
-------=_NextPart_01D77422.A2E5ACB0
+------=_NextPart_01D77423.21C624B0
 Content-Location: file:///C:/11095581/Memoria.htm
 Content-Transfer-Encoding: quoted-printable
 Content-Type: text/html; charset="windows-1252"
@@ -39,10 +39,10 @@ w\:* {behavior:url(#default#VML);}
   <o:Keywords>DATA SCIENCE MASTER</o:Keywords>
   <o:Template>StudentReport.dotx</o:Template>
   <o:LastAuthor>Mariscal Garcia, Marcos</o:LastAuthor>
-  <o:Revision>4</o:Revision>
-  <o:TotalTime>12</o:TotalTime>
+  <o:Revision>5</o:Revision>
+  <o:TotalTime>16</o:TotalTime>
   <o:Created>2021-07-08T15:45:00Z</o:Created>
-  <o:LastSaved>2021-07-08T15:56:00Z</o:LastSaved>
+  <o:LastSaved>2021-07-08T16:00:00Z</o:LastSaved>
   <o:Pages>1</o:Pages>
   <o:Words>3</o:Words>
   <o:Characters>18</o:Characters>
@@ -59,12 +59,12 @@ w\:* {behavior:url(#default#VML);}
   <o:AllowPNG/>
  </o:OfficeDocumentSettings>
 </xml><![endif]-->
+<link rel=3DdataStoreItem href=3D"Memoria_archivos/item0013.xml"
+target=3D"Memoria_archivos/props014.xml">
 <link rel=3DdataStoreItem href=3D"Memoria_archivos/item0015.xml"
 target=3D"Memoria_archivos/props016.xml">
 <link rel=3DdataStoreItem href=3D"Memoria_archivos/item0017.xml"
 target=3D"Memoria_archivos/props018.xml">
-<link rel=3DdataStoreItem href=3D"Memoria_archivos/item0019.xml"
-target=3D"Memoria_archivos/props020.xml">
 <link rel=3DthemeData href=3D"Memoria_archivos/themedata.thmx">
 <link rel=3DcolorSchemeMapping href=3D"Memoria_archivos/colorschememapping.=
 xml">
@@ -2660,8 +2660,8 @@ p>
  <p class=3DMsoNormal style=3D'margin-bottom:10.0pt'><v:shape id=3D"Cuadro_=
 x0020_de_x0020_texto_x0020_2"
   o:spid=3D"_x0000_s1026" type=3D"#_x0000_t202" style=3D'position:absolute;
-  margin-left:0;margin-top:14.4pt;width:153.5pt;height:97.2pt;z-index:25166=
-7456;
+  margin-left:0;margin-top:14.4pt;width:153.5pt;height:164.2pt;z-index:2516=
+67456;
   visibility:visible;mso-wrap-style:square;mso-width-percent:400;
   mso-height-percent:200;mso-wrap-distance-left:9pt;mso-wrap-distance-top:3=
 .6pt;
@@ -2717,6 +2717,13 @@ i-font-size:
      href=3D"file:///C:/Users/mmariscal/Documents/TFM-KSCHOOL/TFM-KSCHOOL/D=
 ataCleansing/DataCleansing.html">..\DataCleansing\DataCleansing.html</a><o:=
 p></o:p></span></p>
+     <p class=3DMsoNormal><span lang=3DES style=3D'font-size:12.0pt;mso-bid=
+i-font-size:
+     10.0pt;line-height:110%'><o:p>&nbsp;</o:p></span></p>
+     <p class=3DMsoNormal><span lang=3DES style=3D'font-size:12.0pt;mso-bid=
+i-font-size:
+     10.0pt;line-height:110%'>Seguimos con la llamada al segundo RMD<o:p></=
+o:p></span></p>
      </div>
      <![if !mso]></td>
     </tr>
@@ -2760,8 +2767,8 @@ _Toc329354601'></span>
 
 </html>
 
-------=_NextPart_01D77422.A2E5ACB0
-Content-Location: file:///C:/11095581/Memoria_archivos/item0015.xml
+------=_NextPart_01D77423.21C624B0
+Content-Location: file:///C:/11095581/Memoria_archivos/item0013.xml
 Content-Transfer-Encoding: quoted-printable
 Content-Type: text/xml
 
@@ -2769,8 +2776,8 @@ Content-Type: text/xml
 erties xmlns=3D"http://schemas.microsoft.com/office/2006/coverPageProps"><P=
 ublishDate/><Abstract/><CompanyAddress/><CompanyPhone/><CompanyFax/><Compan=
 yEmail/></CoverPageProperties>
-------=_NextPart_01D77422.A2E5ACB0
-Content-Location: file:///C:/11095581/Memoria_archivos/props016.xml
+------=_NextPart_01D77423.21C624B0
+Content-Location: file:///C:/11095581/Memoria_archivos/props014.xml
 Content-Transfer-Encoding: quoted-printable
 Content-Type: text/xml
 
@@ -2779,16 +2786,16 @@ Content-Type: text/xml
 s:ds=3D"http://schemas.openxmlformats.org/officeDocument/2006/customXml"><d=
 s:schemaRefs><ds:schemaRef ds:uri=3D"http://schemas.microsoft.com/office/20=
 06/coverPageProps"/></ds:schemaRefs></ds:datastoreItem>
-------=_NextPart_01D77422.A2E5ACB0
-Content-Location: file:///C:/11095581/Memoria_archivos/item0017.xml
+------=_NextPart_01D77423.21C624B0
+Content-Location: file:///C:/11095581/Memoria_archivos/item0015.xml
 Content-Transfer-Encoding: quoted-printable
 Content-Type: text/xml
 
 <?mso-contentType?><FormTemplates xmlns=3D"http://schemas.microsoft.com/sha=
 repoint/v3/contenttype/forms"><Display>DocumentLibraryForm</Display><Edit>A=
 ssetEditForm</Edit><New>DocumentLibraryForm</New></FormTemplates>
-------=_NextPart_01D77422.A2E5ACB0
-Content-Location: file:///C:/11095581/Memoria_archivos/props018.xml
+------=_NextPart_01D77423.21C624B0
+Content-Location: file:///C:/11095581/Memoria_archivos/props016.xml
 Content-Transfer-Encoding: quoted-printable
 Content-Type: text/xml
 
@@ -2797,25 +2804,25 @@ Content-Type: text/xml
 s:ds=3D"http://schemas.openxmlformats.org/officeDocument/2006/customXml"><d=
 s:schemaRefs><ds:schemaRef ds:uri=3D"http://schemas.microsoft.com/sharepoin=
 t/v3/contenttype/forms"/></ds:schemaRefs></ds:datastoreItem>
-------=_NextPart_01D77422.A2E5ACB0
-Content-Location: file:///C:/11095581/Memoria_archivos/item0019.xml
+------=_NextPart_01D77423.21C624B0
+Content-Location: file:///C:/11095581/Memoria_archivos/item0017.xml
 Content-Transfer-Encoding: quoted-printable
 Content-Type: text/xml
 
 <?xml version=3D"1.0" encoding=3D"UTF-8" standalone=3D"yes"?><b:Sources Sel=
 ectedStyle=3D"\APA.XSL" StyleName=3D"APA" xmlns:b=3D"http://schemas.openxml=
 formats.org/officeDocument/2006/bibliography"></b:Sources>
-------=_NextPart_01D77422.A2E5ACB0
-Content-Location: file:///C:/11095581/Memoria_archivos/props020.xml
+------=_NextPart_01D77423.21C624B0
+Content-Location: file:///C:/11095581/Memoria_archivos/props018.xml
 Content-Transfer-Encoding: quoted-printable
 Content-Type: text/xml
 
 <?xml version=3D"1.0" encoding=3D"UTF-8" standalone=3D"no"?>
-<ds:datastoreItem ds:itemID=3D"{91D6D1F3-A26E-4004-BE0F-661A0F3C5B26}" xmln=
+<ds:datastoreItem ds:itemID=3D"{40382ECD-3B46-43DC-93F2-7019517251A6}" xmln=
 s:ds=3D"http://schemas.openxmlformats.org/officeDocument/2006/customXml"><d=
 s:schemaRefs><ds:schemaRef ds:uri=3D"http://schemas.openxmlformats.org/offi=
 ceDocument/2006/bibliography"/></ds:schemaRefs></ds:datastoreItem>
-------=_NextPart_01D77422.A2E5ACB0
+------=_NextPart_01D77423.21C624B0
 Content-Location: file:///C:/11095581/Memoria_archivos/themedata.thmx
 Content-Transfer-Encoding: base64
 Content-Type: application/vnd.ms-officetheme
@@ -2875,7 +2882,7 @@ BgAAuRsAABYAAAAAAAAAAAAAAAAA1gIAAHRoZW1lL3RoZW1lL3RoZW1lMS54bWxQSwECLQAUAAYA
 CAAAACEADdGQn7YAAAAbAQAAJwAAAAAAAAAAAAAAAACHCQAAdGhlbWUvdGhlbWUvX3JlbHMvdGhl
 bWVNYW5hZ2VyLnhtbC5yZWxzUEsFBgAAAAAFAAUAXQEAAIIKAAAAAA==
 
-------=_NextPart_01D77422.A2E5ACB0
+------=_NextPart_01D77423.21C624B0
 Content-Location: file:///C:/11095581/Memoria_archivos/colorschememapping.xml
 Content-Transfer-Encoding: quoted-printable
 Content-Type: text/xml
@@ -2885,7 +2892,7 @@ Content-Type: text/xml
  bg1=3D"lt1" tx1=3D"dk1" bg2=3D"lt2" tx2=3D"dk2" accent1=3D"accent1" accent=
 2=3D"accent2" accent3=3D"accent3" accent4=3D"accent4" accent5=3D"accent5" a=
 ccent6=3D"accent6" hlink=3D"hlink" folHlink=3D"folHlink"/>
-------=_NextPart_01D77422.A2E5ACB0
+------=_NextPart_01D77423.21C624B0
 Content-Location: file:///C:/11095581/Memoria_archivos/plchdr.htm
 Content-Transfer-Encoding: quoted-printable
 Content-Type: text/html; charset="windows-1252"
@@ -2925,7 +2932,7 @@ de la asignatura]</span></div>
 
 </html>
 
-------=_NextPart_01D77422.A2E5ACB0
+------=_NextPart_01D77423.21C624B0
 Content-Location: file:///C:/11095581/Memoria_archivos/header.htm
 Content-Transfer-Encoding: quoted-printable
 Content-Type: text/html; charset="windows-1252"
@@ -3023,7 +3030,7 @@ lang=3DES><span style=3D'mso-element:field-end'></span></span><![endif]--><=
 
 </html>
 
-------=_NextPart_01D77422.A2E5ACB0
+------=_NextPart_01D77423.21C624B0
 Content-Location: file:///C:/11095581/Memoria_archivos/image001.png
 Content-Transfer-Encoding: base64
 Content-Type: image/png
@@ -10633,19 +10640,19 @@ aR1rgJDSMBBZBMD89feijL6zkte8go2+0hd/j4p955DPBpzyGAQLlY+8jU5vf4NSXvcb+a5IJejK
 +rz4lT+j/MXfoeytb1DNbbk5eRZekKP38fvOwf/YpKTu4ifpCDj9+w1e/xCWkJLwH/9fWw0B+P8B
 6dYKOQzHnvsAAAAASUVORK5CYIJ=
 
-------=_NextPart_01D77422.A2E5ACB0
+------=_NextPart_01D77423.21C624B0
 Content-Location: file:///C:/11095581/Memoria_archivos/filelist.xml
 Content-Transfer-Encoding: quoted-printable
 Content-Type: text/xml; charset="utf-8"
 
 <xml xmlns:o=3D"urn:schemas-microsoft-com:office:office">
  <o:MainFile HRef=3D"../Memoria.htm"/>
+ <o:File HRef=3D"item0013.xml"/>
+ <o:File HRef=3D"props014.xml"/>
  <o:File HRef=3D"item0015.xml"/>
  <o:File HRef=3D"props016.xml"/>
  <o:File HRef=3D"item0017.xml"/>
  <o:File HRef=3D"props018.xml"/>
- <o:File HRef=3D"item0019.xml"/>
- <o:File HRef=3D"props020.xml"/>
  <o:File HRef=3D"themedata.thmx"/>
  <o:File HRef=3D"colorschememapping.xml"/>
  <o:File HRef=3D"plchdr.htm"/>
@@ -10653,4 +10660,4 @@ Content-Type: text/xml; charset="utf-8"
  <o:File HRef=3D"header.htm"/>
  <o:File HRef=3D"filelist.xml"/>
 </xml>
-------=_NextPart_01D77422.A2E5ACB0--
+------=_NextPart_01D77423.21C624B0--
