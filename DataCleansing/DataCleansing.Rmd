@@ -211,7 +211,7 @@ lista <- as.integer(format(list, "%Y%m%d"))
 ```
 
 ----------------------------------------------------------------------------------
-## Now representing Air Quality on a USA geographical detailed by county:
+## Now representing Air Quality on a USA geographical detailed by county
 ----------------------------------------------------------------------------------
 
 ```{r Generate_AQI_png_maps,include=FALSE,results = FALSE}
@@ -496,7 +496,6 @@ names(Hospital_Visits_by_State)[names(Hospital_Visits_by_State) == "ID"] <- "STA
 # Merging Population by state with Hospital visits data
 Hosp_visits_pop_by_state <- left_join(x = Hospital_Visits_by_State, y = df_pop_dates, by=c("STATES","Dates"),all.x = TRUE)
 
-#utils::View(Hosp_visits_pop_by_state)
 
 # Saving in a data file the Tibble with Hospital data Visits and States population:
 save(Hosp_visits_pop_by_state, file = paste(datapath,file_visits_save,sep=""))
