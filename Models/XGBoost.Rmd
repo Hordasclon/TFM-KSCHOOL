@@ -1,0 +1,191 @@
+---
+title: "XGBoost"
+author: "Marcos Mariscal"
+date: "23/5/2021"
+output: html_document
+---
+```{r setup, include=FALSE}
+
+# Getting project directory 
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+proydir <- rprojroot::find_rstudio_root_file()
+
+```
+
+---
+# Calling R libraries
+---
+
+```{r call_libraries, include=FALSE}
+
+# Calling R libraries
+library(tidyverse)
+library(ggplot2)
+library(xgboost)
+library(caret)
+library(data.table)
+library(DiagrammeR)
+
+```
+
+---
+## Enviroment variables definition
+---
+
+```{r envdefs, include=FALSE}
+#Environment directories vars
+airfilepath="./Data/Air_Quality/"
+pngpath="./png/"
+datapath="./Data/"
+
+# Defining file names variables to load the data
+file_TotRespData = "TotRespData.Rdata"
+
+```
+
+
+
+```{r Load_TotAgg, echo=FALSE}
+# Read AQI Visits
+load(file = paste(datapath,file_TotRespData, sep=""))
+TotRespData
+
+```
+
+Getting only numeric Features for Respiratory illnesses
+
+```{r numeric}
+
+# taking out features not related to respiratory illnesses
+NumDataResp <- TotRespData[,8:24]
+
+```
+
+---
+## Normalization the Data
+---
+#Z-score normalization, consists of subtracting the mean and divide by the standard deviation
+#We normalize the data to bring all the variables to the same range
+
+```{r norm}
+means <- colMeans(NumDataResp)
+sds <- apply(NumDataResp, 2, sd)
+
+z_NumDataResp <- scale(NumDataResp, center = means, scale = sds)
+
+z_NumDataResp <-  base::data.frame(z_NumDataResp)
+head(z_NumDataResp)
+
+
+```
+#Column AQI is excluded because it will be our label column, the one we want to predict.
+
+```{r}
+df = z_NumDataResp[,!(names(z_NumDataResp) %in% "AQI")]
+AQI_vector = z_NumDataResp$AQI
+head(df)
+
+```
+
+##Splitting data into test and train
+The following code splits 70% of the data selected randomly into training set and the remaining 30% sample into test data set.
+train: will be used to build the model
+test: will be used to assess the quality of our model.
+
+```{r splitting}
+set.seed(100)
+ind <- sample(2, nrow(df), replace = T, prob = c(.7, .3))
+
+df_train <- df[ind==1,1:16]
+df_test <- df[ind==2, 1:16]
+
+```
+
+# Getting labels train and test data
+
+```{r labels}
+t_train <- setDT(df_train)
+t_test <- setDT(df_test)
+
+labels <- df[ind==1, 16]
+ts_labels  <- df[ind==2, 16]
+
+```
+
+# Generating xgb DMatrix
+
+```{r xgb}
+
+dtrain <- xgb.DMatrix(label = labels, data = as.matrix(df_train))
+dtest <- xgb.DMatrix(label = ts_labels, data = as.matrix(df_test))
+
+```
+
+
+## Extreme Gradient Boosting (xgboost). 
+With linear model solver and tree learning algorithms.
+
+eta=0.1; used in update to prevents overfitting (defult=0.3)
+max_depth=15; the trees won’t be deep
+nthread = 2; the number of CPU threads we are going to use
+eval_metric="rmse"; Evaluation metrics for validation data, rmse for regression
+nrounds=150;  the number of passes on the data. After these number of passes there is no rmse reduce
+
+```{r modelxgboost, include=FALSE}
+xgbmod <- xgboost(data = dtrain,
+                  booster = "gblinear", 
+               label = labels,
+               eta=0.1,
+               max_depth=15,
+               nthread = 2,
+               eval_metric ="rmse",
+               nrounds = 500)
+
+```
+
+Predicting
+```{r predict}
+# predict
+print(xgbmod)
+
+predic <- predict(xgbmod, dtest)
+
+print(length(predic))
+
+RMSE(predic, ts_labels)
+
+```
+#Great RMSE value, less than 0.03
+
+Now visualize original test and predicted data in a plot
+
+```{r visual}
+
+x = 1:length(ts_labels)
+plot(x, ts_labels, col = "red", type = "l")
+lines(x, predic, col = "blue", type = "l")
+legend(x = 50, y=6,  legend = c("original values", "predicted values"), 
+       col = c("red", "blue"), box.lty = 2, cex = 0.8, lty = c(1, 1))
+```
+
+#Now we can see the Features importance
+
+```{r Importance}
+# Feature Importance
+importance_matrix <- xgb.importance(model = xgbmod)
+print(importance_matrix)
+```
+
+Plot Importance Matrix
+
+```{r AQI_Importance}
+xgb.plot.importance(importance_matrix = importance_matrix)
+
+```
+
+```{r save}
+#save model
+
+saveRDS(xgbmod, file = "xgbmod.rds")
+xgbmod<-readRDS("xgbmod.rds")
+```

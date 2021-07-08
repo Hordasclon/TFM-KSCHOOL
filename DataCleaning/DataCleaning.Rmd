@@ -26,6 +26,7 @@ proydir <- rprojroot::find_rstudio_root_file()
 #install.packages("patchwork")
 #install.packages("psych")
 #install.packages("MLmetrics")
+#install.packages("DiagrammeR")
 ## Calling for the nedeed libraries:
 
 ```{r libraries_calls, message=FALSE}

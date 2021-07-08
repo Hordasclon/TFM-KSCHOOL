@@ -84,8 +84,6 @@ The following code splits 70% of the data selected randomly into training set an
 dt = sort(sample(nrow(NumDataResp), nrow(NumDataResp)*.7))
 train<-z_NumDataResp[dt,]
 test<-z_NumDataResp[-dt,]
-
-
 ```
 
 ## BASE LINE.Linear Regression
