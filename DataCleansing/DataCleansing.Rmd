@@ -69,7 +69,6 @@ if  (!(dir.exists("./png/")))
 pngpath="./png/"
 datapath="./Data/"
 popfilepath="./Data/Population/"
-datapath="./Data/"
 imgpath="/images/"
 Visitspath="./Data/Hospital_Visits/"
 
@@ -192,6 +191,8 @@ colscateg <- c("1"="green","2"="yellow","3"="orange","4"="red","5"="darkred", "6
 #deleting records with empty areas
 no_nulos = aggtotcounties %>% filter(!is.na(area))
 
+no_nulos$Cat <- as.factor(no_nulos$Cat)
+
 Air_Quality_Indexes <-no_nulos
 
 #Convert to numeric
@@ -213,8 +214,8 @@ lista <- as.integer(format(list, "%Y%m%d"))
 ## Now representing Air Quality on a USA geographical detailed by county:
 ----------------------------------------------------------------------------------
 
-```{r Generate_AQI_png_maps,include=FALSE,results = FALSE, eval=FALSE}
-#, eval=FALSE
+```{r Generate_AQI_png_maps,include=FALSE,results = FALSE}
+# eval=FALSE
 # Generating a map per year and month with air quality data per county
 
 f_maps <- for (i in 1:length(list)){ 
@@ -238,8 +239,8 @@ df <- no_nulos  %>% filter(yearmm==list[[i]])
 
 Now saving maps as .png
 
-```{r AQI_Maps_read, include=FALSE, results = FALSE, eval=FALSE}
-#, eval=FALSE
+```{r AQI_Maps_read, include=FALSE, results = FALSE}
+# eval=FALSE
 # Saving generated maps as png images for animating them
 imglayers <- sapply(lista, function(ym){
   image_read(paste(pngpath,'ggUsa', ym,'.png',  sep=''))
@@ -248,8 +249,8 @@ imglayers <- sapply(lista, function(ym){
 
 Animate maps
 
-```{r AQI_Maps_animate, include=FALSE, results = FALSE, eval=FALSE}
-#, eval=FALSE
+```{r AQI_Maps_animate, include=FALSE, results = FALSE}
+# eval=FALSE
 # Animating saved maps
 imganim <- image_animate(image_join(imglayers),fps=1,dispose="previous")
 ```
@@ -257,17 +258,20 @@ imganim <- image_animate(image_join(imglayers),fps=1,dispose="previous")
 ## Including animated GIF of the Air Quality cheks on a USA geographical counties
 For the 2017 to 2020 years:
 
-```{r AQI_Maps_show, include=FALSE, results = FALSE, eval=FALSE}
-#, eval=FALSE
+```{r AQI_Maps_show, include=FALSE, results = FALSE}
+# eval=FALSE
 image_write(imganim, 'ggUsa.gif')
 
 #giff<-image_read(paste(pngpath,'ggUsa.gif',sep=""))
 
 ```
 
-![](C:/Users/mmariscal/Documents/TFM-KSCHOOL/TFM-KSCHOOL/ggUsa.gif)
+```{r AQIgif, echo=FALSE}
 
+AQIGif<- paste(proydir,"/ggUsa.gif",sep="")
 
+knitr::include_graphics(AQIGif)
+```
 
 ----------------------------------------------------------------------------------
 ## Loading New Data Set, Hospital visits related to respiratory diseases:
@@ -369,7 +373,7 @@ states <- cbind(states, st_coordinates(st_centroid(states)))
 ---
 
 ```{r Visits_map, echo=FALSE,include=FALSE}
-##, eval=FALSE
+## eval=FALSE
 
 #utils::View(Hospital_Visits_by_State)# for watching all dataframe, normal view function just show first 50 columns
 
@@ -400,7 +404,7 @@ df <- Hospital_Visits_by_State  %>% filter(Dates==dates[i])
 # Looping all created maps for a moving image
 
 ```{r looping_maps, echo=FALSE}
-#, eval=FALSE
+# eval=FALSE
 imgvislayers <- sapply(dates, function(jm){
   image_read(paste(pngpath,'ggVisitsUsa', jm,'.png',  sep=''))
   })
@@ -412,7 +416,7 @@ imgvislayers <- sapply(dates, function(jm){
 ---
 
 ```{r save_visits_map, echo=FALSE}
-## , eval=FALSE
+##  eval=FALSE
 
 # Generating a moving image from saved maps
 imganimvisits <- image_animate(image_join(imgvislayers),fps=1,dispose="previous")
@@ -425,15 +429,19 @@ imganimvisits <- image_animate(image_join(imgvislayers),fps=1,dispose="previous"
 
 
 ```{r showing_visits_map, echo=FALSE}
-#, eval=FALSE
+# eval=FALSE
 gif_file="ggvisitsUsa.gif"
 
 image_write(imganimvisits,gif_file)
 
-#giffvisits<-image_read(,gif_file,sep="")
 ```
 
-![](C:/Users/mmariscal/Documents/TFM-KSCHOOL/TFM-KSCHOOL/ggvisitsUsa.gif)
+```{r VisitsGif, echo=FALSE}
+
+VisitsGif<- paste(proydir,"/ggvisitsUsa.gif",sep="")
+
+knitr::include_graphics(VisitsGif)
+```
 
 ---
 ## Loading population data from 2017 to 2020 by State
