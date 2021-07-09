@@ -12,9 +12,7 @@ proydir <- rprojroot::find_rstudio_root_file()
 
 ```
 
----
-# Calling R libraries
----
+#### This RMarkdown gaves first aproach with a lineal regression model
 
 ```{r call_libraries, include=FALSE}
 
@@ -26,9 +24,6 @@ library(Metrics)
 
 ```
 
----
-## Enviroment variables definition
----
 
 ```{r envdefs, include=FALSE}
 #Environment directories vars
@@ -43,10 +38,9 @@ file_TotRespData = "TotRespData.Rdata"
 
 
 
-```{r Load_TotAgg, echo=FALSE}
+```{r Load_TotAgg, include=FALSE}
 # Read AQI Visits
 load(file = paste(datapath,file_TotRespData, sep=""))
-TotRespData
 
 ```
 
@@ -59,10 +53,13 @@ NumDataResp <- TotRespData[,8:26]
 ```
 
 ---
-## Normalization the Data
+
+### Normalization the Data
+
 ---
-#Z-score normalization, consists of subtracting the mean and divide by the standard deviation
-#We normalize the data to bring all the variables to the same range
+
+#### Z-score normalization, consists of subtracting the mean and divide by the standard deviation
+ We normalize the data to bring all the variables to the same range
 
 ```{r norm}
 means <- colMeans(NumDataResp)
@@ -72,11 +69,10 @@ z_NumDataResp <- scale(NumDataResp, center = means, scale = sds)
 
 z_NumDataResp <- as_tibble(z_NumDataResp)
 
-head(z_NumDataResp)
 
 ```
 
-##Splitting data into test and train
+#### Splitting data into test and train
 The following code splits 70% of the data selected randomly into training set and the remaining 30% sample into test data set
 
 ```{r splitting}
@@ -86,7 +82,7 @@ train<-z_NumDataResp[dt,]
 test<-z_NumDataResp[-dt,]
 ```
 
-## BASE LINE.Linear Regression
+### BASE LINE.Linear Regression
 The fist approach for a good prediction model y to get results of a basic model such a Linear Regression
 
 ```{r linregression1}
@@ -95,8 +91,9 @@ linreg1<- lm(AQI~., data = train)
 summary(linreg1)
 
 ```
-# We have to coefficients smaller than 0.05 in Features Ages_18_44 and RPS010, then theses are good features to predict Bad Air Quality conditions.
-# Regarding R squared value is not good 0.20, because it refers that this model has good predictions only for the 20% of the values.
+#### We have to coefficients smaller than 0.05 in Features Ages_18_44 and RPS010, then theses are good features to predict Bad Air Quality conditions.
+
+Regarding R squared value is not good 0.20, because it refers that this model has good predictions only for the 20% of the values.
 Some variables could be taken out to for this model.
 
 
@@ -107,15 +104,15 @@ summary(linreg2)
 
 ```
 
-# In this second model we can see than most of variables pass the Hypothesis Test
+### In this second model we can see than most of variables pass the Hypothesis Test
 
 ```{r}
 layout(matrix(c(1,2,3,4), 2, 2, byrow = TRUE))
 plot(linreg2)
 ```
-# It seems than linear regressor model is not good to fit our dataset
+It seems than linear regressor model is not good to fit our dataset
 
-##Now we calculate Root Mean Square Error (RMSE) to assess how well
+### Now we calculate Root Mean Square Error (RMSE) to assess how well
 
 
 ```{r predict,message=FALSE,warning=FALSE}
@@ -123,5 +120,5 @@ Predic1<- predict(linreg2, newdata= test)
 rmse(test$AQI,Predic1)
 ```
 
-# RMSE value ≥0.5 reflects the poor ability of the model to accurately predict the data.
+### RMSE value ≥0.5 reflects the poor ability of the model to accurately predict the data.
 

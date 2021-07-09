@@ -12,9 +12,7 @@ proydir <- rprojroot::find_rstudio_root_file()
 
 ```
 
----
-# Calling R libraries
----
+#### This RMarkdown gaves second aproach with a Random Forest regression model
 
 ```{r call_libraries, include=FALSE}
 
@@ -23,10 +21,6 @@ library(randomForest)
 library(tidyverse)
 library(MLmetrics)
 ```
-
----
-## Enviroment variables definition
----
 
 ```{r envdefs, include=FALSE}
 #Environment directories vars
@@ -44,7 +38,6 @@ file_TotRespData = "TotRespData.Rdata"
 ```{r Load_TotAgg, echo=FALSE}
 # Read AQI Visits
 load(file = paste(datapath,file_TotRespData, sep=""))
-TotRespData
 
 ```
 
@@ -57,8 +50,11 @@ NumDataResp <- TotRespData[,8:26]
 ```
 
 ---
-# Normalization the Data
+
+#### Normalization the Data
+
 ---
+
 Z-score normalization, consists of subtracting the mean and divide by the standard deviation
 We normalize the data to bring all the variables to the same range
 
@@ -70,14 +66,12 @@ z_NumDataResp <- scale(NumDataResp, center = means, scale = sds)
 
 z_NumDataResp <- as_tibble(z_NumDataResp)
 
-colnames(z_NumDataResp)
-
-head(z_NumDataResp)
 
 ```
 
 
-##Splitting data into test and train
+####Splitting data into test and train
+
 The following code splits 70% of the data selected randomly into training set and the remaining 30% sample into test data set
 
 ```{r splitting}
@@ -113,10 +107,11 @@ predict1 <- predict(rf, test)
 RMSE(predict1, test$AQI)
 ```
 
-# RMSE value ≥0.5 reflects the poor ability of the model to accurately predict the data.
+### RMSE value ≥0.5 reflects the poor ability of the model to accurately predict the data
+
 This RMSE value (0.91) is worse than the Base Line one (0.84)
 
-Now visualize original test and predicted data in a plot
+## Now visualize original test and predicted data in a plot
 
 ```{r visual}
 
@@ -132,8 +127,9 @@ legend(x = 70, y=3.4,  legend = c("original values", "predicted values"),
 ```
 
 
-```
-#Plotting Model
+
+### Plotting Model
+
 ```{r plotmodel}
 plot(rf, log="y")
 ```
