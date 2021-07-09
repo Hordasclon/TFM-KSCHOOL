@@ -75,7 +75,6 @@ From: <https://www.hcup-us.ahrq.gov/reports/trendtables/summarytrendtables.jsp#e
 
 This Data Set contains the daily summary files with one record for each monitor that reported data for the given day
 
-
 After Loading, we aggregate AQI US County Data by Month and per Year in order to prepare this data to merge with "HOspital Visits & Emergencies" Data Set from 2017 to 2020
 
 

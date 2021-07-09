@@ -6,7 +6,6 @@ output: html_document
 ---
 
 
-
 ```{r setup, include=FALSE}
 
 # Getting project directory 
@@ -14,11 +13,12 @@ knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
 proydir <- rprojroot::find_rstudio_root_file()
 ```
 
----
-# Calling R libraries
----
+
+#### This RMarkdown __merge__ all data and represent different graphs to visualice relation with features
+
 
 ```{r call_libraries, include=FALSE}
+# Calling R libraries
 library(tidyverse)
 library (tools)
 library(dplyr)
@@ -31,10 +31,9 @@ library(cowplot)
 
 ```
 
----
-## Enviroment variables definition
----
+
 ```{r envdefs, include=FALSE}
+## Enviroment variables definition
 airfilepath="./Data/Air_Quality/"
 pngpath="./png/"
 datapath="./Data/"
@@ -48,8 +47,13 @@ Years = c(2017,2018,2019,2020)
 ```
 
 ---
-## Loading Air QUality Indexes Data and Hospital Unexpected Visits population at State level with geographical data
+
+### Loading Air QUality Indexes Data and Hospital Visits $ Emergencies population at State level with geographical data
+
 ---
+
+This first DataSet has been generated with the DataCleasing R Notebook
+
 
 ```{r Load_AirQ, echo=FALSE}
 # Read AQI Visits
@@ -59,8 +63,12 @@ head(Air_Quality_Indexes)
 ```
 
 ---
-## Loading Hospital Unexpected Visits and the whole population at USA State level with geographical data
+
+### Loading Hospital Visits & Emergencies and the whole population at USA State level with geographical data
+
 ---
+
+This second DataSet has been also generated with the DataCleasing R Notebook
 
 ```{r Load_HospVisits, echo=FALSE}
 # Read Hospital Visits
@@ -68,13 +76,11 @@ load(file = paste(datapath,file_visits_saved, sep=""))
 head(Hosp_visits_pop_by_state)
 #utils::View(Hosp_visits_pop_by_state)
 
-
 ```
 
----------------------------------------------------------------------
-## Group Air QUality Indexes by States
----------------------------------------------------------------------
-Air Quality Indexes Grouped by USA State and month, having media from: Cat, AQI
+---
+
+To prepare the merging of DataSets 1 and 2 we should first aggregate AQI data by US State and month, having media from: Cat, AQI
 
 ```{r AQI_Group_By_State, include=FALSE}
 
@@ -94,11 +100,8 @@ AQI_State_Group <- rename(AQI_State_Group, "Dates"="yearmm")
 
 ```
 
---- 
-# Merging Air Quality data with Hospital Visits and states population
----
 
-```{r Merge_Data, echo=FALSE}
+```{r Merge_Data, include=FALSE}
 
 # Merge for Air Quality data and Hospital Visits group by USA State. With geographical data
 
@@ -136,12 +139,7 @@ TotData <- Tot_no_null%>%mutate(MONTH= as.integer(format(Dates, "%m")))
 
 ```
 
-# Now we are going to analyze best data to study the correlation between Air Qaulity Index and the effects of health 
-  Aggregating all years data, monthly bases
-
-```{r TOTAggMonth, message=FALSE}
-# Standard deviation and mean rate of hospital visits per month and USA State
-#AggTotData <- TotData %>% group_by(STATES,MONTH,statreg,statabb) %>% summarize(mnVisits = mean(All_discharges), mnPop=mean(POPULATION), mncat=mean(Cat), mnAQI=mean(AQI), mnAges0_4=mean(Ages_0_4), mnAges5_9=mean(Ages_5_9), mnAges10_17=mean(Ages_10_17), mnAges18_44=mean(Ages_18_44), mnAges45_64=mean(Ages_45_64), mnAges65_79=mean(Ages_65_79), mnAges_80=mean(Ages_80), mnMale=mean(Male), mnFemale=mean(Female), mnResL=mean(Resi_L_metro), mnResMS=mean(Resi_M_S_metros+Resi_nonmetro+Resi_missing), mnVent=mean(Missing_income), mnSepti=mean(Use_mech_ventilation), mnPneum=mean(RSP002_pneumonia), mnBron=mean(RSP005_acute_bronchitis),mnPulm=mean(RSP008_chronic_pulmonary), mnAsthma=mean(RSP009_asthma),mnAsp=mean(RSP010_aspiration_pneumonitis), mnResp=mean(RSP012_respiratory_failure), mnOthr=mean(All_other_conditions), mnTotResp=mean(RSP002_pneumonia+RSP005_acute_bronchitis+RSP008_chronic_pulmonary+RSP009_asthma+RSP010_aspiration_pneumonitis+ RSP012_respiratory_failure), nyears = n())
+```{r TOTAggMonth, include=FALSE}
 
 TotData <- mutate(TotData,TotResp=RSP002_pneumonia+RSP005_acute_bronchitis+RSP008_chronic_pulmonary+RSP009_asthma+RSP010_aspiration_pneumonitis+ RSP012_respiratory_failure)
 
@@ -154,11 +152,8 @@ MonthData<- TotData %>%select(STATES,MONTH,statreg,statabb,TotResp,POPULATION,AQ
 
 ```
 
----
-# This ggplot graph is to analyze the different State data for Hospital visits with respiratory diseases
----
-
-```{r TOTggplot, message=FALSE}
+```{r TOTggplot, include=FALSE}
+### This ggplot graph is to analyze the different State data for Hospital visits with respiratory diseases
 f_visits_graphs <- for (i in 1:12){ 
   
   PartMonthData<- MonthData %>%select(MONTH,statreg,statabb,mnPop,mnTotResp) %>%filter(MONTH== i)
@@ -187,17 +182,22 @@ f_visits_graphs <- for (i in 1:12){
 
 ```
 
-# Visual analysis for Hospital visits with respiratory diseases aggretated Data by Month
+---
+
+### Visual analysis for Hospital visits with respiratory diseases aggretated Data by Month
 For January Data
+
 ```{r Janggplot1, fig.show="hold", out.width="120%"}
 
 Visits_g1
 
 ```
 
+---
 
-# Visual analysis for Hospital visits with respiratory diseases aggretated Data by Month
-From January to April
+### Visual analysis for Hospital visits with respiratory diseases aggretated Data by Month
+For April Data
+
 ```{r Janggplot2, fig.show="hold", out.width="120%"}
 
 Visits_g4
@@ -205,9 +205,9 @@ Visits_g4
 ```
 
 
-# We can see that in general ...
+We can see that in general there are a few US State far from median line
 
-# Now plotting states and Hosp.Visit rates by Month
+### Now plotting states and Hosp.Visit rates by Month
 
 ```{r States_HospV ,include=FALSE}
 
@@ -250,10 +250,10 @@ states_graph_11
 states_graph_12
 ```
 
-# We can see that 10 Sates always repeat with high rates of Hosp.Visits  each year from 2017 to 2020
+We can see that 10 Sates always repeat with high rates of Hosp.Visits each year from 2017 to 2020
 
-## Analyzing Air Quality Data on USA States
-# Standard deviation and mean rate of Air Quality Indexes per month and USA States
+### Analyzing Air Quality Data on USA States
+Standard deviation and mean rate of Air Quality Indexes per month and USA States
 
 
 ```{r AQI graph1 ,include=FALSE}
@@ -285,8 +285,8 @@ states_graph_12
  }
 ```
 
-Presenting Hospital Visits rate vs Air Quality Indexes in all months
-There is en evident correlation between this two features 
+### Presenting Hospital Visits rate vs Air Quality Indexes in all months
+ 
 
 ```{r}
 states_tot_1
@@ -303,10 +303,7 @@ states_tot_11
 states_tot_12
 ```
 
-## Its is clear than there is a correlation between Hospital Visits ratio and the Air Quality Index
-every month of the year
-
-
+Its is clear than there is a correlation between Hospital Visits ratio and the Air Quality Index every month of the year
 Saving Aggregated Data for the next Notebook
 
 ```{r saving_data}

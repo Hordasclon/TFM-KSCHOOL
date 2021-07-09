@@ -21,6 +21,7 @@ proydir <- rprojroot::find_rstudio_root_file()
 # Calling R libraries
 library(randomForest)
 library(tidyverse)
+library(MLmetrics)
 ```
 
 ---
@@ -126,7 +127,7 @@ t1 <- cbind(pre,act)
 x = 1:length(t1[,1])
 plot(x, t1[,1], col = "red", type = "l")
 lines(x, t1[,2], col = "blue", type = "l")
-legend(x = 70, y=3.8,  legend = c("original values", "predicted values"), 
+legend(x = 70, y=3.4,  legend = c("original values", "predicted values"), 
        col = c("red", "blue"), box.lty = 2, cex = 0.8, lty = c(1, 1))
 ```
 
@@ -136,3 +137,4 @@ legend(x = 70, y=3.8,  legend = c("original values", "predicted values"),
 ```{r plotmodel}
 plot(rf, log="y")
 ```
+
