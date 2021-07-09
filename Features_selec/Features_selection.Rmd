@@ -12,9 +12,7 @@ proydir <- rprojroot::find_rstudio_root_file()
 
 ```
 
----
-# Calling R libraries
----
+#### This RMarkdown tries to  find correlations between features to select the best group for the goal of this project
 
 ```{r call_libraries, include=FALSE}
 
@@ -29,9 +27,7 @@ library(corrplot)
 
 ```
 
----
-## Enviroment variables definition
----
+
 ```{r envdefs, include=FALSE}
 #Environment directories vars
 airfilepath="./Data/Air_Quality/"
@@ -43,16 +39,15 @@ file_TotData = "TotData.Rdata"
 file_TotRespData_save = "TotRespData.Rdata"
 ```
 
-Loading Data field of Hosp.Visits and AQI data
+### Loading Data field of Hosp.Visits and AQI data
 
 ```{r Load_TotAgg, echo=FALSE}
 # Read AQI Visits
 load(file = paste(datapath,file_TotData, sep=""))
-head(TotData)
 # utils::View(TotData)
 ```
 
-# Replace Zeros to NA for all numeric columns
+#### Replace Zeros to NA for all numeric columns
 
 ```{r TotRespData, include=FALSE}
 
@@ -66,17 +61,15 @@ TotRespData <- TotRespData %>% mutate_at(vars(-c(STATES,statabb,Dates, MONTH, st
 
 ```
 
-Count the number of the NA values
-
 ```{r zeros, include=FALSE}
+
+## Count the number of the NA values
 Num_NA <- sapply(TotRespData, function(y) length(which(is.na(y) == T)))
 NA_Count <- data.frame(Item = colnames(TotRespData), Count = Num_NA)
 NA_Count
 ```
 
-
-
-
+#### Complete NA values, we will use predictive mean matching (pmm) (multi nominal logistic regression)
 
 ```{r pmm, include=FALSE,echo=FALSE}
 # To complete NA values, we will use predictive mean matching (pmm) (multi nominal logistic regression)
@@ -99,7 +92,7 @@ Completed <- complete(impute, 2)
 
 ```
 
-# Distribution of imputed values with observed ones for Hosp.visits per age ranges
+### Distribution of imputed values with observed ones for Hosp.visits per age ranges
 
 ```{r Age_Ranges, fig.show="hold", out.width="50%"}
 p1 <- ggplot(Completed) + geom_point(aes(statabb,Ages_0_4))+
@@ -117,7 +110,7 @@ p4 <- ggplot(Completed) + geom_point(aes(statabb,Ages_18_44))+
 p1 + p2 + p3 + p4
 ```
 
-# Distribution of imputed values with observed ones for different respiratori ilnesses
+### Distribution of imputed values with observed ones for different respiratori ilnesses
 
 ```{r Respiratory, fig.show="hold", out.width="50%"}
 p5 <-  ggplot(Completed) + geom_point(aes(MONTH,RSP002_pneumonia))+
@@ -149,7 +142,7 @@ TotRespData<- TotRespData%>%select(STATES,statabb,Dates,MONTH,statreg,Category,C
 
 ```
 
-
+### Correlation Matrix
 
 ```{r corrmatrix }
 #Correlation for Air Quality Index and all Hospital Visits of Respiratory illness
@@ -158,7 +151,7 @@ set.seed(7)
 
 # calculate correlation aggtotd
 correlationMatrix <- cor(TotRespData[,8:26])
-correlationMatrix
+
 ```
 
 
@@ -166,11 +159,11 @@ correlationMatrix
 chart.Correlation(TotRespData[,9:26], histogram = T, pch = 19)
 
 ```
-```{r corrnumbers,  fig.show="hold",out.width="120%"}
-corrplot(correlationMatrix, method="number")
-```
 
-#coefficients whose magnitude are between 0.3 and 0.5 indicate variables which have a low correlation
+
+#### coefficients whose magnitude are between 0.3 and 0.5 indicate variables which have a low correlation
+
+
 ```{r printheat, out.width="50%"}
 palette = colorRampPalette(c("blue", "white", "red")) (20)
 heatmap(x = correlationMatrix, col = palette, symm = TRUE)
