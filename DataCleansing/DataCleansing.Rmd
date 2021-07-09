@@ -10,26 +10,11 @@ knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
 proydir <- rprojroot::find_rstudio_root_file()
 ```
 
-## Libreries to install:
-#install.packages("tidyverse") .- tibble using and other tools
-#install.packages("sf") .- Geospatial data of several countries
-#install.packages("maps") .- USA Regions data 
-#install.packages("tools") .- Different R utilites to use in graphic titles for example
-#install.packages("utils") .- Several R utilities
-#install.packages("stringr") .- handling of text strings
-#install.packages("rnaturalearth") .- Many countries data
-#install.packages("rnaturalearthdata").- Needed to create a great map
-#install.packages("ggrepel") .- Used for labels do not overlap on the map
-#install.packages("magick") .- To generate animations with pre-built maps
-#install.packages("readxl") .- for reading excel files
-#install.packages("R.utils").-  To get several functions like isZero 
-#install.packages("patchwork")
-#install.packages("psych")
-#install.packages("MLmetrics")
-#install.packages("DiagrammeR") 
-## Calling for the nedeed libraries:
+This RMarkdown __loads__, __clean__ and __prepare__ data for further analysis
 
-```{r libraries_calls, message=FALSE}
+
+```{r libraries_calls, include=FALSE}
+#### Fist of all we load libraries needed
 library (yaml)
 library(tidyverse)
 library(sf) 
@@ -46,14 +31,10 @@ library(readxl)
 library(lubridate)
 library(gganimate)
 
-
 ```
 
----
-## Enviroment variables
----
-
-```{r Env_vars, message=FALSE}
+```{r Env_vars, include=FALSE, out.width = '70%'}
+### Enviroment variables
 #List for the years related to Air Quality Data
 datayears = c("2017","2018","2019","2020")
 
@@ -84,17 +65,24 @@ file_visits_save = "Hosp_visits_pop_by_state.Rdata"
 #Generate not_in function for different uses
 `%not_in%` <- purrr::negate(`%in%`)
 
-
 ```
 
----------------------------------------------------------------------
-## Loading Data from "Dialy Air Quality Monitor"
-From: https://www.hcup-us.ahrq.gov/reports/trendtables/summarytrendtables.jsp#export
----------------------------------------------------------------------
-## Aggregate AQI USA County Data by Month per Year
 
-Each NAAQS pollutant has a separate AQI scale, with an AQI rating of 100 corresponding to the concentration of the Federal Standard for that pollutant. 
-```{r pressure, echo=FALSE, fig.cap="A caption", out.width = '100%'}
+##  Loading First Data Set: "Dialy Air Quality Monitor"
+From: <https://www.hcup-us.ahrq.gov/reports/trendtables/summarytrendtables.jsp#export>.
+
+
+
+This Data Set contains the daily summary files with one record for each monitor that reported data for the given day
+
+
+After Loading, we aggregate AQI US County Data by Month and per Year in order to prepare this data to merge with "HOspital Visits & Emergencies" Data Set from 2017 to 2020
+
+
+
+
+
+```{r pressure, echo=FALSE, fig.cap="A caption", out.width = '70%'}
 
 AQIjpg<- paste(proydir,imgpath,"AQI.jpg",sep="")
 
@@ -102,6 +90,7 @@ knitr::include_graphics(AQIjpg)
 
 ```
 
+Each NAAQS pollutant has a separate AQI scale, with an AQI rating of 100 corresponding to the concentration of the Federal Standard for that pollutant. 
 
 ```{r AQI_func_load, include=FALSE}
 # Reading and group function by year
@@ -137,11 +126,9 @@ getagg <- function(year){
 # End of reading and group by function
 ```
 
----
-# calling function to load and group Air quality data by 2017 to 2020:
----
-
 ```{r AQI_func_call, include=FALSE}
+
+# calling function to load and group Air quality data by 2017 to 2020:
 
 aggtot<- tibble()
 # Loop for getting data air quatily
@@ -150,25 +137,37 @@ for (i in 1:length(datayears)){
   aggtot <- union_all(aggtot,aggdata)
 }
 
+
 ```
 
-----------------------------------------------------------------------------------
-## Merging with geographical data for USA Counties, from packages("sf"), and saving as RData:
-----------------------------------------------------------------------------------
+And this is the tibble with AQI Data aggregated by month:
+
+```{r aggtot, out.width = '70%'}
+head(aggtot)
+```
+
+
+---
+
+### Merging with geographical data for US Counties, from r package ("sf"), and saving as RData
+
+Next step is to merge __AQI__ Data with US __Counties__ geographical data with the objective to plot a US map with those values
+
+---
 
 ```{r Usa_Geo_Data, include=FALSE}
 
-#  Generating ID field to join with tibble USA counties:
+#  Generating ID field to join with tibble US counties:
 aggtot$ID <- paste(tolower(aggtot$State.Name),tolower(aggtot$county.Name), sep=",", collapse=NULL)
 
-# Getting geographical data for USA counties:
+# Getting geographical data for US counties:
 counties <- st_as_sf(map("county", plot = FALSE, fill = TRUE))
 counties$area <- as.numeric(st_area(counties))
 
 # Joining aggregated AQI data with counties geographical data
 aggtotcounties <- merge(x = aggtot, y = counties, by = "ID", all.x = TRUE)
 
-# Getting USA states data:
+# Getting US states data:
 states <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
 states$ID <- toTitleCase(states$ID)
 
@@ -210,9 +209,9 @@ list <- dist_yearmm$yearmm
 lista <- as.integer(format(list, "%Y%m%d"))
 ```
 
-----------------------------------------------------------------------------------
-## Now representing Air Quality on a USA geographical detailed by county
-----------------------------------------------------------------------------------
+
+###  Representing Air Quality on a US geographical detailed by county
+
 
 ```{r Generate_AQI_png_maps,include=FALSE,results = FALSE}
 # eval=FALSE
@@ -228,7 +227,7 @@ df <- no_nulos  %>% filter(yearmm==list[[i]])
         geom_label_repel(size=2,fontface="bold",data = states, aes(x = X, y = Y, label = ID), 
         nudge_x = c(1, -1.5, 2, 2, -1), nudge_y = c(0.25, -0.25, 0.5, 0.5, -0.5)) +
         coord_sf(xlim = c(-130, -58), ylim = c(24.0, 50.1), expand = FALSE) +
-        ggtitle(paste("Air Quality in USA Counties",list[i],sep=" "))+
+        ggtitle(paste("Air Quality in US Counties",list[i],sep=" "))+
         theme(axis.title.x=element_blank(),axis.title.y=element_blank())
  
   ggsave(paste(pngpath,"ggUsa",lista[i],".png", sep=""),
@@ -237,17 +236,15 @@ df <- no_nulos  %>% filter(yearmm==list[[i]])
 
 ```
 
-Now saving maps as .png
-
 ```{r AQI_Maps_read, include=FALSE, results = FALSE}
 # eval=FALSE
+# Now saving maps as .png
 # Saving generated maps as png images for animating them
 imglayers <- sapply(lista, function(ym){
   image_read(paste(pngpath,'ggUsa', ym,'.png',  sep=''))
 })
-```
 
-Animate maps
+```
 
 ```{r AQI_Maps_animate, include=FALSE, results = FALSE}
 # eval=FALSE
@@ -255,8 +252,13 @@ Animate maps
 imganim <- image_animate(image_join(imglayers),fps=1,dispose="previous")
 ```
 
-## Including animated GIF of the Air Quality cheks on a USA geographical counties
-For the 2017 to 2020 years:
+--
+
+#### Animated Map with Air Quality Indexes by US counties
+
+---
+
+In the map below we can see that the data collected is really useful for our purposes. The map represent Air Quality Indexes For the 2017 to 2020 years:
 
 ```{r AQI_Maps_show, include=FALSE, results = FALSE}
 # eval=FALSE
@@ -267,17 +269,22 @@ image_write(imganim, 'ggUsa.gif')
 ```
 
 ```{r AQIgif, echo=FALSE}
-
+# eval=FALSE
 AQIGif<- paste(proydir,"/ggUsa.gif",sep="")
 
 knitr::include_graphics(AQIGif)
 ```
 
-----------------------------------------------------------------------------------
-## Loading New Data Set, Hospital visits related to respiratory diseases:
-From: https://www.hcup-us.ahrq.gov/reports/trendtables/summarytrendtables.jsp#export
-This is an excel report and the different States date are in different sheets of the same excel workbook
-----------------------------------------------------------------------------------
+---
+
+##  Loading Second Data Set "Hospital Visits & Emergencies"
+From: <https://www.hcup-us.ahrq.gov/reports/trendtables/summarytrendtables.jsp#export>
+
+This is the data for the __Hospital__ __Visits__ and __Emergencies__ in US States from __2017__ to __2020__
+
+This data is an excel report and the different States date are in different __sheets__ of the same __excel__ __workbook__
+
+
 ```{r Visits_load, include=FALSE}
 
 #New column names for the Hospital visits DataSet:
@@ -288,7 +295,7 @@ newcols<-c("A_Num_Dis","All_discharges","A_Num_byAge","Ages_0_4","Ages_5_9","Age
 #New tibble to contain all Hospital visits data
 dftotvisits <- tibble()
 
-#We go through all the USA states with a loop, reading all excel sheets, except Alabama, Florida, Idaho and New Hampshire which has no data:
+#We go through all the US states with a loop, reading all excel sheets, except Alabama, Florida, Idaho and New Hampshire which has no data:
 except_states = c("Alabama","Florida","Idaho","New Hampshire")
 
 for (i in 1:length(state.name)){
@@ -335,11 +342,9 @@ medsd_visits <- dftotvisits %>% group_by(ID) %>% summarize(average = mean(All_di
 
 ```
 
-----------------------------------------------------------------------------------
-## Including geographical USA states data to attach to the Hospital visits dataset
-----------------------------------------------------------------------------------
 
 ```{r Visits_states, include=FALSE}
+### Including geographical US states data to attach it to the Hospital visits dataset
 
 #Idenfying Hospital visits urgency types
 nvisits<- c(1,2,3,4,5,6)
@@ -348,28 +353,32 @@ catvisits<- c("Good","Moderate","Unhealthy for Sensitive Groups","Unhealthy","Ve
 #Defining colors for each category value
 colsvisits <- c("1"="green","2"="yellow","3"="orange","4"="red","5"="darkred", "6"="black")
 
-
-#Getting USA States data from sf library
+#Getting US States data from sf library
 
 states <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
 
 states$ID <- toTitleCase(states$ID)
 
-#Including area data of USA States in "state" dataframe
+#Including area data of US States in "state" dataframe
 states$area <- as.numeric(st_area(states))
 
 world <- ne_countries(scale = "medium", returnclass = "sf")
 
 states <- cbind(states, st_coordinates(st_centroid(states)))
 
-# Merging Hospital Visits with geographical data by USA States
+# Merging Hospital Visits with geographical data by US States
 
  Hospital_Visits_by_State <- merge(x = dftotvisits, y = states, by = "ID", all.x = TRUE) 
 
 ```
 
+
 ---
-# Generating a map with Hospital Visists per year and month
+
+### Map for Hospital Visits by US State per year and month
+
+We have merged geographical US states data with the Hospital visits dataset to generate the animated map below
+
 ---
 
 ```{r Visits_map, echo=FALSE,include=FALSE}
@@ -391,7 +400,7 @@ df <- Hospital_Visits_by_State  %>% filter(Dates==dates[i])
         geom_label_repel(size=2,fontface="bold",data = states, aes(x = X, y = Y, label = ID), 
         nudge_x = c(1, -1.5, 2, 2, -1), nudge_y = c(0.25, -0.25, 0.5, 0.5, -0.5)) +
         coord_sf(xlim = c(-130, -58), ylim = c(24.0, 50.1), expand = FALSE) +
-        ggtitle(paste("Hospital Visits in USA States",dist_dates$Dates[i],sep=" "))+
+        ggtitle(paste("Hospital Visits in US States",dist_dates$Dates[i],sep=" "))+
         theme(axis.title.x=element_blank(),axis.title.y=element_blank())
 
 # Saving all generated maps as images (.png):
@@ -401,7 +410,6 @@ df <- Hospital_Visits_by_State  %>% filter(Dates==dates[i])
 }
 ```
 
-# Looping all created maps for a moving image
 
 ```{r looping_maps, echo=FALSE}
 # eval=FALSE
@@ -411,11 +419,9 @@ imgvislayers <- sapply(dates, function(jm){
 
 ```
 
----
-## Saving generated maps
----
 
 ```{r save_visits_map, echo=FALSE}
+## Saving generated maps
 ##  eval=FALSE
 
 # Generating a moving image from saved maps
@@ -423,13 +429,12 @@ imganimvisits <- image_animate(image_join(imgvislayers),fps=1,dispose="previous"
 
 ```
 
----
-## Generating an animated map of Hospital Visists
----
 
 
 ```{r showing_visits_map, echo=FALSE}
 # eval=FALSE
+## Generating an animated map of Hospital Visits
+
 gif_file="ggvisitsUsa.gif"
 
 image_write(imganimvisits,gif_file)
@@ -444,13 +449,17 @@ knitr::include_graphics(VisitsGif)
 ```
 
 ---
-## Loading population data from 2017 to 2020 by State
-From: https://www2.census.gov/programs-surveys/popest/datasets/2010-2020/state/totals/USA
+
+## Loading the Third Data Set: US States population data from 2017 to 2020
+From: <https://www2.census.gov/programs-surveys/popest/datasets/2010-2020/state/totals/USA>
+
+With this data we can calculate the rates for Hospital Visits & Emergencies per Population in each US State
+
 ---
 
 ```{r PopulationData_load, echo=FALSE}
 
-#Loading csv data for USA population by State and per year, since 2017 to 2020
+#Loading csv data for US population by State and per year, since 2017 to 2020
 
     df_pop <- read.table( paste(popfilepath,filepop,sep=""), header=T, quote="\"", sep=",")
 
@@ -502,3 +511,7 @@ save(Hosp_visits_pop_by_state, file = paste(datapath,file_visits_save,sep=""))
 
 
 ```
+
+---
+
+#### We can see with these two animated maps that the __collected__ __data__ are __good__ and __accuracy__ for the goal of this project
