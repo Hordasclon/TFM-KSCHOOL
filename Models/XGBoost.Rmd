@@ -12,9 +12,8 @@ proydir <- rprojroot::find_rstudio_root_file()
 
 ```
 
----
-# Calling R libraries
----
+
+#### This RMarkdown gaves last aproach with a XGBoost regression model
 
 ```{r call_libraries, include=FALSE}
 
@@ -28,9 +27,6 @@ library(DiagrammeR)
 
 ```
 
----
-## Enviroment variables definition
----
 
 ```{r envdefs, include=FALSE}
 #Environment directories vars
@@ -48,7 +44,7 @@ file_TotRespData = "TotRespData.Rdata"
 ```{r Load_TotAgg, echo=FALSE}
 # Read AQI Visits
 load(file = paste(datapath,file_TotRespData, sep=""))
-TotRespData
+
 
 ```
 
@@ -62,10 +58,13 @@ NumDataResp <- TotRespData[,8:24]
 ```
 
 ---
-## Normalization the Data
+
+#### Normalization the Data
+
 ---
-#Z-score normalization, consists of subtracting the mean and divide by the standard deviation
-#We normalize the data to bring all the variables to the same range
+
+Z-score normalization, consists of subtracting the mean and divide by the standard deviation
+We normalize the data to bring all the variables to the same range
 
 ```{r norm}
 means <- colMeans(NumDataResp)
@@ -74,11 +73,11 @@ sds <- apply(NumDataResp, 2, sd)
 z_NumDataResp <- scale(NumDataResp, center = means, scale = sds)
 
 z_NumDataResp <-  base::data.frame(z_NumDataResp)
-head(z_NumDataResp)
+
 
 
 ```
-#Column AQI is excluded because it will be our label column, the one we want to predict.
+### Column AQI is excluded because it will be our label column, the one we want to predict.
 
 ```{r}
 df = z_NumDataResp[,!(names(z_NumDataResp) %in% "AQI")]
@@ -87,7 +86,8 @@ head(df)
 
 ```
 
-##Splitting data into test and train
+### Splitting data into test and train
+
 The following code splits 70% of the data selected randomly into training set and the remaining 30% sample into test data set.
 train: will be used to build the model
 test: will be used to assess the quality of our model.
@@ -101,8 +101,6 @@ df_test <- df[ind==2, 1:16]
 
 ```
 
-# Getting labels train and test data
-
 ```{r labels}
 t_train <- setDT(df_train)
 t_test <- setDT(df_test)
@@ -112,7 +110,6 @@ ts_labels  <- df[ind==2, 16]
 
 ```
 
-# Generating xgb DMatrix
 
 ```{r xgb}
 
@@ -122,7 +119,7 @@ dtest <- xgb.DMatrix(label = ts_labels, data = as.matrix(df_test))
 ```
 
 
-## Extreme Gradient Boosting (xgboost). 
+### Extreme Gradient Boosting (xgboost). 
 With linear model solver and tree learning algorithms.
 
 eta=0.1; used in update to prevents overfitting (defult=0.3)
@@ -143,7 +140,8 @@ xgbmod <- xgboost(data = dtrain,
 
 ```
 
-Predicting
+### Predicting
+
 ```{r predict}
 # predict
 print(xgbmod)
@@ -155,9 +153,10 @@ print(length(predic))
 RMSE(predic, ts_labels)
 
 ```
-#Great RMSE value, less than 0.03
+#### Great RMSE value, less than 0.03
 
-Now visualize original test and predicted data in a plot
+
+### Now visualize original test and predicted data in a plot
 
 ```{r visual}
 
@@ -168,7 +167,7 @@ legend(x = 50, y=6,  legend = c("original values", "predicted values"),
        col = c("red", "blue"), box.lty = 2, cex = 0.8, lty = c(1, 1))
 ```
 
-#Now we can see the Features importance
+### Now we can see the Features importance
 
 ```{r Importance}
 # Feature Importance
@@ -176,7 +175,7 @@ importance_matrix <- xgb.importance(model = xgbmod)
 print(importance_matrix)
 ```
 
-Plot Importance Matrix
+### Plot Importance Matrix
 
 ```{r AQI_Importance}
 xgb.plot.importance(importance_matrix = importance_matrix)
